@@ -14,17 +14,18 @@ datasource db {
 // ---------- Auth (M1) ----------
 
 model User {
-  id           String    @id @default(uuid(7)) @db.Uuid
+  id           String        @id @default(uuid(7)) @db.Uuid
   // Stored lowercase and trimmed; normalized in the auth service before writes and lookups.
-  email        String    @unique
-  passwordHash String    @map("password_hash")
+  email        String        @unique
+  passwordHash String        @map("password_hash")
   name         String
   // IANA timezone name, e.g. "Asia/Jakarta". Defines the user's "today" and "this week".
   timezone     String
-  isDemo       Boolean   @default(false) @map("is_demo")
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  isDemo       Boolean       @default(false) @map("is_demo")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
   sessions     Session[]
+  applications Application[]
 
   @@index([isDemo, createdAt])
   @@map("users")
@@ -41,4 +42,103 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@map("sessions")
+}
+
+// ---------- Applications (M2) ----------
+
+enum ApplicationStatus {
+  wishlist
+  applied
+  assessment
+  interview
+  offer
+  closed
+
+  @@map("application_status")
+}
+
+enum ApplicationOutcome {
+  accepted
+  rejected
+  withdrawn
+
+  @@map("application_outcome")
+}
+
+enum EmploymentType {
+  full_time
+  part_time
+  contract
+  internship
+  freelance
+
+  @@map("employment_type")
+}
+
+enum InterviewType {
+  phone
+  video
+  onsite
+
+  @@map("interview_type")
+}
+
+model Application {
+  id                String                   @id @default(uuid(7)) @db.Uuid
+  userId            String                   @map("user_id") @db.Uuid
+  company           String
+  position          String
+  status            ApplicationStatus        @default(applied)
+  // Set only when status = closed (enforced by a CHECK constraint).
+  outcome           ApplicationOutcome?
+  // Local calendar dates in the user's timezone.
+  appliedDate       DateTime?                @map("applied_date") @db.Date
+  followUpDate      DateTime?                @map("follow_up_date") @db.Date
+  jobUrl            String?                  @map("job_url")
+  location          String?
+  employmentType    EmploymentType?          @map("employment_type")
+  salaryExpectation String?                  @map("salary_expectation")
+  description       String?
+  notes             String?
+  // Kanban cards are ordered by this, newest first.
+  statusChangedAt   DateTime                 @default(now()) @map("status_changed_at") @db.Timestamptz
+  createdAt         DateTime                 @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime                 @updatedAt @map("updated_at") @db.Timestamptz
+  user              User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statusEvents      ApplicationStatusEvent[]
+  interviews        Interview[]
+
+  @@index([userId, status])
+  @@index([userId, appliedDate])
+  @@map("applications")
+}
+
+// Append-only history. One row on create and one per status change.
+model ApplicationStatusEvent {
+  id            String              @id @default(uuid(7)) @db.Uuid
+  applicationId String              @map("application_id") @db.Uuid
+  fromStatus    ApplicationStatus?  @map("from_status")
+  toStatus      ApplicationStatus   @map("to_status")
+  outcome       ApplicationOutcome?
+  changedAt     DateTime            @default(now()) @map("changed_at") @db.Timestamptz
+  application   Application         @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, changedAt])
+  @@map("application_status_events")
+}
+
+model Interview {
+  id            String        @id @default(uuid(7)) @db.Uuid
+  applicationId String        @map("application_id") @db.Uuid
+  scheduledAt   DateTime      @map("scheduled_at") @db.Timestamptz
+  type          InterviewType
+  title         String?
+  meetingUrl    String?       @map("meeting_url")
+  notes         String?
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, scheduledAt])
+  @@map("interviews")
 }

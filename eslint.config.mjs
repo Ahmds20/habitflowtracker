@@ -8,6 +8,20 @@ const eslintConfig = defineConfig([
   ...nextTs,
   // Turn off rules that conflict with Prettier formatting.
   prettier,
+  {
+    rules: {
+      // Allow intentionally unused names that start with "_",
+      // e.g. dropping a field with `const { secret: _secret, ...rest } = row`.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

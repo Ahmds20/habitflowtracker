@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
+import { InterviewsView } from "@/components/applications/interviews-view";
 import { PageHeader } from "@/components/app/page-header";
 
 export const metadata: Metadata = { title: "Interviews · HabitFlow" };
 
-// Placeholder until milestone M2.
 export default function Page() {
   return (
-    <PageHeader
-      title="Interviews"
-      description="Upcoming and past interviews. Coming in M2."
-    />
+    <>
+      <PageHeader
+        title="Interviews"
+        description="All interviews across your applications."
+      />
+      <InterviewsView />
+    </>
   );
 }
