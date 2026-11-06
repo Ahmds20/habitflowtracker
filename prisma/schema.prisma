@@ -10,3 +10,35 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+// ---------- Auth (M1) ----------
+
+model User {
+  id           String    @id @default(uuid(7)) @db.Uuid
+  // Stored lowercase and trimmed; normalized in the auth service before writes and lookups.
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  name         String
+  // IANA timezone name, e.g. "Asia/Jakarta". Defines the user's "today" and "this week".
+  timezone     String
+  isDemo       Boolean   @default(false) @map("is_demo")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  sessions     Session[]
+
+  @@index([isDemo, createdAt])
+  @@map("users")
+}
+
+model Session {
+  // sha256 hex of the session token. The raw token only lives in the user's cookie.
+  id        String   @id
+  userId    String   @map("user_id") @db.Uuid
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}

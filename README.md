@@ -28,17 +28,30 @@ Open http://localhost:3000. Check the database connection at http://localhost:30
 
 ## Scripts
 
-| Script               | Description                                         |
-| -------------------- | --------------------------------------------------- |
-| `npm run dev`        | Start the dev server                                |
-| `npm run build`      | Generate the Prisma client and build for production |
-| `npm run lint`       | Run ESLint                                          |
-| `npm run typecheck`  | Run the TypeScript compiler                         |
-| `npm run format`     | Format code with Prettier                           |
-| `npm test`           | Run unit tests                                      |
-| `npm run db:migrate` | Create and apply a migration (development)          |
-| `npm run db:deploy`  | Apply migrations (production)                       |
-| `npm run db:studio`  | Open Prisma Studio                                  |
+| Script                     | Description                                         |
+| -------------------------- | --------------------------------------------------- |
+| `npm run dev`              | Start the dev server                                |
+| `npm run build`            | Generate the Prisma client and build for production |
+| `npm run lint`             | Run ESLint                                          |
+| `npm run typecheck`        | Run the TypeScript compiler                         |
+| `npm run format`           | Format code with Prettier                           |
+| `npm test`                 | Run unit tests                                      |
+| `npm run test:integration` | Run integration tests against a local database      |
+| `npm run db:migrate`       | Create and apply a migration (development)          |
+| `npm run db:deploy`        | Apply migrations (production)                       |
+| `npm run db:studio`        | Open Prisma Studio                                  |
+
+## Testing
+
+Unit tests need no setup: `npm test`.
+
+Integration tests run against a separate local database and refuse to run against any non-local host:
+
+```bash
+npx prisma dev --name habitflow-test --detach   # prints a postgres:// URL
+# set TEST_DATABASE_URL in .env to that URL, then:
+npm run test:integration
+```
 
 ## Project Structure
 
