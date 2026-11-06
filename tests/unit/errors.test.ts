@@ -29,3 +29,15 @@ describe("toErrorResponse", () => {
     spy.mockRestore();
   });
 });
+
+describe("AppError headers", () => {
+  it("adds extra headers such as Retry-After to the response", () => {
+    const res = toErrorResponse(
+      new AppError("RATE_LIMITED", "Slow down", undefined, {
+        "Retry-After": "30",
+      }),
+    );
+    expect(res.status).toBe(429);
+    expect(res.headers.get("Retry-After")).toBe("30");
+  });
+});
