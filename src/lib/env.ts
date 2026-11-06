@@ -9,17 +9,20 @@ const envSchema = z.object({
     .default("development"),
   // Pooled connection string used by the app at runtime.
   DATABASE_URL: z.url(),
-  // Upstash Redis for rate limiting. Optional outside production:
-  // without these, rate limiting is skipped (local dev and tests).
+  // Set by Vercel: "production", "preview", or "development". Unset elsewhere.
+  VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
+  // Upstash Redis for rate limiting. Required only on the Vercel production
+  // deployment; without these, rate limiting is skipped (local dev, CI, previews).
   UPSTASH_REDIS_REST_URL: z.url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
 });
 
+// NODE_ENV is "production" for every build (CI, previews, local `next build`),
+// so the Upstash requirement keys off VERCEL_ENV instead.
 const parsed = envSchema
   .refine(
     (env) =>
-      env.NODE_ENV !== "production" ||
-      process.env.CI === "true" ||
+      env.VERCEL_ENV !== "production" ||
       (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN),
     {
       message: "Upstash credentials are required in production",
