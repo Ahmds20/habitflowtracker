@@ -1,0 +1,12 @@
+// HabitFlow database schema.
+// Models are added per milestone (M1: users, sessions; M2: applications; M3: habits).
+// CHECK constraints that Prisma cannot express live as raw SQL inside migrations.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
