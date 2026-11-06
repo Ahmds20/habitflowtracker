@@ -103,4 +103,6 @@ A log of product and technical decisions made during planning. Each entry record
 
 ### D21. Rate limiting with Upstash
 
+- **Decision:** Sliding-window limits: login 20 per IP and 10 per email per 15 minutes, register 5 per IP per hour. Limits fail open after 1 s if Redis is down. Without Upstash credentials (local dev, tests) rate limiting is skipped; production requires them.
+
 - **Why:** In-memory rate limits do not work on serverless, where each request may hit a different instance.

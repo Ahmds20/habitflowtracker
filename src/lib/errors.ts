@@ -18,6 +18,8 @@ export class AppError extends Error {
     public readonly code: ErrorCode,
     message: string,
     public readonly details?: unknown,
+    // Extra response headers, e.g. Retry-After for RATE_LIMITED.
+    public readonly headers?: Record<string, string>,
   ) {
     super(message);
     this.name = "AppError";
@@ -32,10 +34,11 @@ export function errorResponse(
   code: ErrorCode,
   message: string,
   details?: unknown,
+  headers?: Record<string, string>,
 ) {
   return Response.json(
     { error: { code, message, ...(details === undefined ? {} : { details }) } },
-    { status: errorStatus[code] },
+    { status: errorStatus[code], headers },
   );
 }
 
@@ -43,7 +46,12 @@ export function errorResponse(
 // Unknown errors are logged and hidden from the client.
 export function toErrorResponse(error: unknown) {
   if (error instanceof AppError) {
-    return errorResponse(error.code, error.message, error.details);
+    return errorResponse(
+      error.code,
+      error.message,
+      error.details,
+      error.headers,
+    );
   }
   if (error instanceof z.ZodError) {
     return errorResponse(
