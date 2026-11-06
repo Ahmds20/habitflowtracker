@@ -106,3 +106,18 @@ A log of product and technical decisions made during planning. Each entry record
 - **Decision:** Sliding-window limits: login 20 per IP and 10 per email per 15 minutes, register 5 per IP per hour. Limits fail open after 1 s if Redis is down. Without Upstash credentials (local dev, tests) rate limiting is skipped; production requires them.
 
 - **Why:** In-memory rate limits do not work on serverless, where each request may hit a different instance.
+
+### D22. Status changes have their own endpoint and transaction
+
+- **Decision:** `PATCH /applications/:id/status` is the only way to change status. It writes the history event and updates the application in one transaction. Undo is another status change, so history stays honest.
+- **Why:** Keeps the history complete and the "closed requires an outcome" rule in one place, backed by a CHECK constraint.
+
+### D23. Local dates without a date library
+
+- **Decision:** `src/lib/date.ts` uses `Intl.DateTimeFormat` to compute "today" in the user's timezone and converts `YYYY-MM-DD` strings to and from Postgres `DATE`. Interview times are stored as exact moments and shown in the browser's timezone.
+- **Why:** M2 only needs "today" per timezone. A date library can be added in M3 if week and streak math needs it.
+
+### D24. Client data with TanStack Query; kanban with dnd-kit
+
+- **Decision:** The board loads all applications once and filters on the client. Status changes are optimistic, roll back on error, and offer Undo in a toast. Drag-and-drop is desktop-only; every card also has a status dropdown, which is the keyboard and touch alternative.
+- **Why:** Instant feedback without extra endpoints; the dropdown keeps the board accessible.

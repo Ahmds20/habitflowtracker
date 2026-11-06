@@ -1,6 +1,13 @@
 import "server-only";
 import { z } from "zod";
 
+// An empty value (`KEY=""`, as in .env.example) means "not set".
+const optional = <T extends z.ZodType>(schema: T) =>
+  z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    schema.optional(),
+  );
+
 // Server-side environment variables, validated once at startup.
 // Add new variables here as milestones need them (CRON_SECRET, Upstash keys, ...).
 const envSchema = z.object({
@@ -13,8 +20,8 @@ const envSchema = z.object({
   VERCEL_ENV: z.enum(["production", "preview", "development"]).optional(),
   // Upstash Redis for rate limiting. Required only on the Vercel production
   // deployment; without these, rate limiting is skipped (local dev, CI, previews).
-  UPSTASH_REDIS_REST_URL: z.url().optional(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
+  UPSTASH_REDIS_REST_URL: optional(z.url()),
+  UPSTASH_REDIS_REST_TOKEN: optional(z.string().min(1)),
 });
 
 // NODE_ENV is "production" for every build (CI, previews, local `next build`),
