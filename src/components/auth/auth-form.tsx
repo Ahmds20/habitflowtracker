@@ -71,8 +71,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
         method: "POST",
         body: JSON.stringify(body),
       });
+      // New accounts set their weekly goal first. The app layout also
+      // redirects there, so this only saves one round trip.
       const next = new URLSearchParams(window.location.search).get("next");
-      router.replace(safeNextPath(next));
+      router.replace(mode === "register" ? "/onboarding" : safeNextPath(next));
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError) {

@@ -7,6 +7,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { dashboardKey } from "@/components/dashboard/use-dashboard";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type {
   ApplicationOutcome,
@@ -50,8 +51,15 @@ export function useApplication(id: string) {
   });
 }
 
+// Applications also feed the dashboard (pipeline, weekly goal) and the linked
+// "send applications" habit, so refresh those too. The habits key is written
+// out here because importing it would create an import cycle with use-habits.
 function invalidateAll(client: QueryClient) {
-  return client.invalidateQueries({ queryKey: applicationKeys.all });
+  return Promise.all([
+    client.invalidateQueries({ queryKey: applicationKeys.all }),
+    client.invalidateQueries({ queryKey: dashboardKey }),
+    client.invalidateQueries({ queryKey: ["habits"] }),
+  ]);
 }
 
 export function useCreateApplication() {
@@ -76,7 +84,7 @@ export function useUpdateApplication(id: string) {
       }).then((res) => res.application),
     onSuccess: (application) => {
       client.setQueryData(applicationKeys.detail(id), application);
-      return client.invalidateQueries({ queryKey: applicationKeys.list() });
+      return invalidateAll(client);
     },
   });
 }
@@ -88,7 +96,7 @@ export function useDeleteApplication() {
       apiFetch(`/applications/${id}`, { method: "DELETE" }),
     onSuccess: (_data, id) => {
       client.removeQueries({ queryKey: applicationKeys.detail(id) });
-      return client.invalidateQueries({ queryKey: applicationKeys.list() });
+      return invalidateAll(client);
     },
   });
 }

@@ -136,3 +136,18 @@ A log of product and technical decisions made during planning. Each entry record
 
 - **Decision:** The weekly applications habit reads applied dates from `applications`. It cannot be checked in by hand, archived, or deleted; only its target can change.
 - **Why:** One source of truth. Adding or backdating an application updates the habit automatically.
+
+### D28. Onboarding lives outside the app layout
+
+- **Decision:** The `(app)` layout redirects users without a linked habit to `/onboarding`. The onboarding page sits in its own `(onboarding)` route group so it is not covered by that redirect. Onboarding creates the linked habit and starter habits in one transaction; the partial unique index turns a second submit into a 409.
+- **Why:** Avoids a redirect loop and a half-onboarded user. The linked habit itself marks the user as onboarded, so no extra column is needed.
+
+### D29. The weekly goal counts the whole first week
+
+- **Decision:** The linked habit counts applications from the Monday of the week it was created, not only from the creation day.
+- **Why:** Someone who applied on Monday and signs up on Wednesday has still sent those applications this week.
+
+### D30. Dashboard is one aggregate endpoint
+
+- **Decision:** `GET /dashboard` returns this week's goal, habit consistency, today's habits, pipeline counts, upcoming interviews, and due follow-ups. It only reads from other modules. Habit consistency caps each weekly-target habit at its target.
+- **Why:** One request for the daily loop. Capping stops one over-achieved habit from hiding a missed one.

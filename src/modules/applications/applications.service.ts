@@ -225,3 +225,42 @@ export function countAppliedInRange(
     },
   });
 }
+
+// Read-only export for the dashboard: number of applications in each status.
+export async function countByStatus(userId: string) {
+  const groups = await db.application.groupBy({
+    by: ["status"],
+    where: { userId },
+    _count: { _all: true },
+  });
+  const counts = {
+    wishlist: 0,
+    applied: 0,
+    assessment: 0,
+    interview: 0,
+    offer: 0,
+    closed: 0,
+  };
+  for (const group of groups) counts[group.status] = group._count._all;
+  return counts;
+}
+
+// Read-only export for the dashboard: open applications whose follow-up date
+// is today or earlier. Closed applications need no follow-up.
+export async function listDueFollowUps(
+  userId: string,
+  today: LocalDate,
+  limit = 5,
+) {
+  const rows = await db.application.findMany({
+    where: {
+      userId,
+      status: { not: "closed" },
+      followUpDate: { lte: toDbDate(today) },
+    },
+    select: summarySelect,
+    orderBy: { followUpDate: "asc" },
+    take: limit,
+  });
+  return rows.map(toSummary);
+}

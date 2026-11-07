@@ -56,11 +56,13 @@ async function loadDoneDates(
   from: LocalDate,
 ): Promise<LocalDate[]> {
   if (habit.source === "applications") {
+    // The goal is weekly, so count the whole week the habit started in:
+    // applications sent on Monday still count after onboarding on Wednesday.
     const rows = await db.application.findMany({
       where: {
         userId,
         status: { not: "wishlist" },
-        appliedDate: { gte: toDbDate(from) },
+        appliedDate: { gte: toDbDate(startOfWeek(from)) },
       },
       select: { appliedDate: true },
     });

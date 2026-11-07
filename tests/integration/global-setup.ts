@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { execSync } from "node:child_process";
 
 // Integration tests need their own database. They refuse to run against
