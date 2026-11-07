@@ -58,23 +58,27 @@ export async function login(input: LoginInput) {
     select: { ...userSelect, passwordHash: true },
   });
 
+  // Demo accounts have no password (only "Try demo" signs them in), so they
+  // take the same path as an unknown email.
+  const account = user && !user.isDemo ? user : null;
+
   // Always run one hash verification so response time does not reveal whether the email exists.
   const valid = await verifyPassword(
-    user?.passwordHash ?? (await getDummyHash()),
+    account?.passwordHash ?? (await getDummyHash()),
     input.password,
   );
-  if (!user || !valid) {
+  if (!account || !valid) {
     throw new AppError("UNAUTHENTICATED", "Incorrect email or password");
   }
 
-  const session = await createSession(user.id);
+  const session = await createSession(account.id);
   return {
     user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      timezone: user.timezone,
-      isDemo: user.isDemo,
+      id: account.id,
+      email: account.email,
+      name: account.name,
+      timezone: account.timezone,
+      isDemo: account.isDemo,
     },
     session,
   };

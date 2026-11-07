@@ -22,6 +22,9 @@ const envSchema = z.object({
   // deployment; without these, rate limiting is skipped (local dev, CI, previews).
   UPSTASH_REDIS_REST_URL: optional(z.url()),
   UPSTASH_REDIS_REST_TOKEN: optional(z.string().min(1)),
+  // Shared secret Vercel Cron sends as "Authorization: Bearer <secret>".
+  // Without it the cron endpoint rejects every request.
+  CRON_SECRET: optional(z.string().min(16, "Use at least 16 characters")),
 });
 
 // NODE_ENV is "production" for every build (CI, previews, local `next build`),
