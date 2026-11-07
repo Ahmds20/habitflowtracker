@@ -1,9 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import {
-  UserBadge,
-  requireUserOrRedirect,
-} from "@/components/app/current-user";
+import { AppGuard, UserBadge } from "@/components/app/current-user";
 import { LogoutButton } from "@/components/app/logout-button";
 import { BottomNav, SidebarNav } from "@/components/app/nav";
 import { Providers } from "@/components/providers";
@@ -40,12 +37,10 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* On mobile the sidebar is hidden, so validate the session here too. */}
-        <div className="md:hidden">
-          <Suspense>
-            <MobileGuard />
-          </Suspense>
-        </div>
+        {/* Validates the session and onboarding on every app page. */}
+        <Suspense>
+          <AppGuard />
+        </Suspense>
         <main className="flex-1 px-4 pt-6 pb-24 md:px-8 md:pb-8">
           <Providers>{children}</Providers>
         </main>
@@ -66,9 +61,4 @@ function NavFallback({ count }: { count: number }) {
       ))}
     </div>
   );
-}
-
-async function MobileGuard() {
-  await requireUserOrRedirect();
-  return null;
 }

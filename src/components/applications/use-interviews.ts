@@ -6,6 +6,7 @@ import type {
   Interview,
   InterviewWithApplication,
 } from "@/modules/applications/types";
+import { dashboardKey } from "@/components/dashboard/use-dashboard";
 import { applicationKeys } from "./use-applications";
 
 export const interviewKeys = {
@@ -23,7 +24,8 @@ export function useInterviews(range: "upcoming" | "past") {
   });
 }
 
-// Interview changes affect the application detail page and the interviews list.
+// Interview changes affect the application detail page, the interviews list,
+// and the upcoming interviews on the dashboard.
 function useInvalidate(applicationId: string) {
   const client = useQueryClient();
   return () =>
@@ -32,6 +34,7 @@ function useInvalidate(applicationId: string) {
         queryKey: applicationKeys.detail(applicationId),
       }),
       client.invalidateQueries({ queryKey: interviewKeys.all }),
+      client.invalidateQueries({ queryKey: dashboardKey }),
     ]);
 }
 

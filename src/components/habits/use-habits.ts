@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 import type { Habit, HabitDetail } from "@/modules/habits/types";
 import { errorMessage } from "@/components/applications/use-applications";
+import { dashboardKey } from "@/components/dashboard/use-dashboard";
+import type { Dashboard } from "@/modules/dashboard/types";
 
 export const habitKeys = {
   all: ["habits"] as const,
@@ -91,32 +93,52 @@ export function useToggleCheckin() {
         method: done ? "PUT" : "DELETE",
       }).then((res) => res.habit),
     onMutate: async ({ habit, done }) => {
-      const key = habitKeys.list(false);
-      await client.cancelQueries({ queryKey: key });
-      const previous = client.getQueryData<Habit[]>(key);
-      client.setQueryData<Habit[]>(key, (list) =>
-        list?.map((h) =>
-          h.id === habit.id
-            ? {
-                ...h,
-                today: { ...h.today, done },
-                week: {
-                  ...h.week,
-                  done: Math.max(0, h.week.done + (done ? 1 : -1)),
-                },
-              }
-            : h,
-        ),
+      const update = (h: Habit): Habit =>
+        h.id === habit.id
+          ? {
+              ...h,
+              today: { ...h.today, done },
+              week: {
+                ...h.week,
+                done: Math.max(0, h.week.done + (done ? 1 : -1)),
+              },
+            }
+          : h;
+
+      // The same habit appears on the habits page and on the dashboard.
+      const listKey = habitKeys.list(false);
+      await Promise.all([
+        client.cancelQueries({ queryKey: listKey }),
+        client.cancelQueries({ queryKey: dashboardKey }),
+      ]);
+      const previousList = client.getQueryData<Habit[]>(listKey);
+      const previousDashboard = client.getQueryData<Dashboard>(dashboardKey);
+      client.setQueryData<Habit[]>(listKey, (list) => list?.map(update));
+      client.setQueryData<Dashboard>(
+        dashboardKey,
+        (dashboard) =>
+          dashboard && {
+            ...dashboard,
+            todayHabits: dashboard.todayHabits.map(update),
+          },
       );
-      return { previous };
+      return { previousList, previousDashboard };
     },
     onError: (error, _vars, context) => {
-      if (context?.previous) {
-        client.setQueryData(habitKeys.list(false), context.previous);
+      if (context?.previousList) {
+        client.setQueryData(habitKeys.list(false), context.previousList);
+      }
+      if (context?.previousDashboard) {
+        client.setQueryData(dashboardKey, context.previousDashboard);
       }
       toast.error(errorMessage(error));
     },
-    onSettled: () => client.invalidateQueries({ queryKey: habitKeys.all }),
+    // Refetch both so streaks and the weekly consistency come from the server.
+    onSettled: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: habitKeys.all }),
+        client.invalidateQueries({ queryKey: dashboardKey }),
+      ]),
   });
 
   return (habit: Habit, date: string, done: boolean) =>
