@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AppGuard, UserBadge } from "@/components/app/current-user";
+import { DemoBanner } from "@/components/app/demo-banner";
 import { LogoutButton } from "@/components/app/logout-button";
 import { BottomNav, SidebarNav } from "@/components/app/nav";
 import { Providers } from "@/components/providers";
@@ -37,6 +38,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        <Suspense>
+          <DemoBanner />
+        </Suspense>
         {/* Validates the session and onboarding on every app page. */}
         <Suspense>
           <AppGuard />

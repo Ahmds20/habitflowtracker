@@ -151,3 +151,18 @@ A log of product and technical decisions made during planning. Each entry record
 
 - **Decision:** `GET /dashboard` returns this week's goal, habit consistency, today's habits, pipeline counts, upcoming interviews, and due follow-ups. It only reads from other modules. Habit consistency caps each weekly-target habit at its target.
 - **Why:** One request for the daily loop. Capping stops one over-achieved habit from hiding a missed one.
+
+### D31. Demo accounts are created on demand and seeded relative to today
+
+- **Decision:** `POST /auth/demo` creates a demo user with 15 applications, a status history, interviews, a follow-up, and 4 habits with 3 weeks of check-ins, all dated relative to today in the visitor's timezone. Today's check-ins are left open, and one habit is daily so there is always something to check in. Demo accounts have no password and cannot log in with one.
+- **Why:** A recruiter sees a lived-in dashboard in one click, on any day of the week.
+
+### D32. Demo cleanup runs as a Vercel Cron job
+
+- **Decision:** `GET /api/cron/cleanup-demo` runs daily at 19:00 UTC (02:00 in Jakarta) and deletes demo users older than 24 hours; foreign keys cascade to all their data. It requires `Authorization: Bearer <CRON_SECRET>`, compared in constant time, and rejects every request when the secret is not set.
+- **Why:** The Hobby plan allows one run per day, so a demo lives at most about 48 hours. Failing closed keeps the endpoint safe if the secret is missing.
+
+### D33. A landing page that shows the core idea
+
+- **Decision:** One page: headline, short description, "Try the demo" and "Create an account", a week-of-applications illustration built from real markup, and three plain value points. The only animation is the illustration filling in once on load, and it is skipped with reduced motion.
+- **Why:** Matches D10. The illustration explains the weekly goal faster than a screenshot and stays sharp at any size.
