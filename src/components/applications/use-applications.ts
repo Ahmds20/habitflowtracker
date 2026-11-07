@@ -13,7 +13,8 @@ import type {
   ApplicationOutcome,
   ApplicationStatus,
 } from "@/modules/applications/applications.schema";
-import { statusLabels, outcomeLabels } from "@/modules/applications/labels";
+import { useI18n } from "@/i18n/client";
+import { statusText } from "@/modules/applications/labels";
 import type {
   ApplicationDetail,
   ApplicationSummary,
@@ -25,8 +26,14 @@ export const applicationKeys = {
   detail: (id: string) => ["applications", "detail", id] as const,
 };
 
-export function errorMessage(error: unknown) {
-  return error instanceof ApiError ? error.message : "Something went wrong";
+// Turns any thrown value into a message in the current language. API errors
+// are translated when the dictionary knows them (t.serverMessages).
+export function useErrorMessage() {
+  const { t } = useI18n();
+  return (error: unknown) =>
+    error instanceof ApiError
+      ? (t.serverMessages[error.message] ?? error.message)
+      : t.common.somethingWrong;
 }
 
 // The board loads every application once and filters on the client.
@@ -118,6 +125,8 @@ function putStatus({ id, status, outcome }: StatusChange) {
 // and offers Undo, which is just another status change back.
 export function useChangeStatus() {
   const client = useQueryClient();
+  const { t } = useI18n();
+  const errorMessage = useErrorMessage();
 
   const mutation = useMutation({
     mutationFn: putStatus,
@@ -162,15 +171,15 @@ export function useChangeStatus() {
       { id: app.id, status, outcome },
       {
         onSuccess: () => {
-          const label = outcome
-            ? `${statusLabels[status]} · ${outcomeLabels[outcome]}`
-            : statusLabels[status];
-          toast.success(`${app.company} moved to ${label}`, {
-            action: {
-              label: "Undo",
-              onClick: () => mutation.mutate({ id: app.id, ...before }),
+          toast.success(
+            t.applications.moved(app.company, statusText(t, status, outcome)),
+            {
+              action: {
+                label: t.common.undo,
+                onClick: () => mutation.mutate({ id: app.id, ...before }),
+              },
             },
-          });
+          );
         },
       },
     );

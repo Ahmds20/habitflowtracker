@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { z } from "zod";
+import { getDictionary, getLocale } from "@/i18n/server";
 import { apiHandler, readJson } from "@/lib/api";
 import { clientIp, enforceRateLimit, limits } from "@/lib/rate-limit";
 import { isValidTimezone } from "@/modules/auth/auth.schema";
@@ -18,7 +19,9 @@ export const POST = apiHandler(async (request) => {
   await connection();
   await enforceRateLimit(limits.demo, clientIp(request));
   const { timezone } = demoSchema.parse(await readJson(request));
-  const { session } = await createDemoUser(timezone);
+  // Sample data is written in the visitor's language.
+  const t = getDictionary(await getLocale());
+  const { session } = await createDemoUser(timezone, new Date(), t);
   await setSessionCookie(session.token, session.expiresAt);
   return new Response(null, { status: 201 });
 });

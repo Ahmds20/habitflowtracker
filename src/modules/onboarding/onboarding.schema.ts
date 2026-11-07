@@ -1,33 +1,29 @@
 import { z } from "zod";
 import type { HabitCategory } from "@/modules/habits/habits.schema";
 
-// Starter habits offered on the onboarding screen. Each is a simple
+// Starter habits offered on the onboarding screen. Names live in the
+// dictionaries (t.onboarding.starters) so they follow the user's language. Each is a simple
 // "every weekday" or "N times a week" habit the user can edit later.
 export const starterHabits = {
   practice_coding: {
-    name: "Practice coding",
     category: "learning",
     schedule: { scheduleType: "days", daysOfWeek: [1, 2, 3, 4, 5] },
   },
   update_portfolio: {
-    name: "Update portfolio or CV",
     category: "career",
     schedule: { scheduleType: "weekly_target", targetPerWeek: 1 },
   },
   study_english: {
-    name: "Study English",
     category: "learning",
     schedule: { scheduleType: "days", daysOfWeek: [1, 2, 3, 4, 5] },
   },
   exercise: {
-    name: "Exercise for 30 minutes",
     category: "health",
     schedule: { scheduleType: "weekly_target", targetPerWeek: 3 },
   },
 } as const satisfies Record<
   string,
   {
-    name: string;
     category: HabitCategory;
     schedule:
       | { scheduleType: "days"; daysOfWeek: readonly number[] }

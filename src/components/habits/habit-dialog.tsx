@@ -23,13 +23,14 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useI18n, useServerMessage } from "@/i18n/client";
 import { ApiError } from "@/lib/api-client";
 import {
   habitCategories,
   type HabitCategory,
   type ScheduleType,
 } from "@/modules/habits/habits.schema";
-import { categoryLabels, weekdayLabels } from "@/modules/habits/labels";
+import { weekdayLabel } from "@/modules/habits/labels";
 import type { Habit } from "@/modules/habits/types";
 import { useSaveHabit } from "./use-habits";
 
@@ -46,6 +47,9 @@ export function HabitDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useI18n();
+  const translate = useServerMessage();
+  const dlg = t.habits.dialog;
   const save = useSaveHabit();
   const linked = habit?.source === "applications";
   const [scheduleType, setScheduleType] = useState<ScheduleType>(
@@ -84,13 +88,15 @@ export function HabitDialog({
 
     try {
       await save.mutateAsync({ id: habit?.id, body });
-      toast.success(habit ? "Habit updated" : "Habit created");
+      toast.success(habit ? dlg.updated : dlg.created);
       onOpenChange(false);
     } catch (error) {
       if (error instanceof ApiError && error.details) setErrors(error.details);
       else
         toast.error(
-          error instanceof ApiError ? error.message : "Could not save",
+          error instanceof ApiError
+            ? translate(error.message)
+            : t.common.couldNotSave,
         );
     }
   }
@@ -100,39 +106,34 @@ export function HabitDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {linked
-              ? "Weekly applications goal"
-              : habit
-                ? "Edit habit"
-                : "New habit"}
+            {linked ? dlg.linkedTitle : habit ? dlg.editTitle : dlg.newTitle}
           </DialogTitle>
           {linked && (
-            <DialogDescription>
-              Counts applications you send each week. It updates automatically.
-            </DialogDescription>
+            <DialogDescription>{dlg.linkedDescription}</DialogDescription>
           )}
         </DialogHeader>
         <form
           id="habit-form"
+          method="post"
           onSubmit={onSubmit}
           noValidate
           className="flex flex-col gap-4"
         >
           {!linked && (
             <>
-              <Field label="Name" htmlFor="habit-name" errors={errors.name}>
+              <Field label={dlg.name} htmlFor="habit-name" errors={errors.name}>
                 <Input
                   id="habit-name"
                   name="name"
                   autoFocus
-                  placeholder="Practice coding for 1 hour"
+                  placeholder={dlg.namePlaceholder}
                   defaultValue={habit?.name ?? ""}
                   aria-invalid={errors.name ? true : undefined}
                 />
               </Field>
-              <Field label="Category" htmlFor="habit-category">
+              <Field label={dlg.category} htmlFor="habit-category">
                 <Select
-                  items={categoryLabels}
+                  items={t.habits.categories}
                   value={category}
                   onValueChange={(v) => v && setCategory(v as HabitCategory)}
                 >
@@ -142,7 +143,7 @@ export function HabitDialog({
                   <SelectContent>
                     {habitCategories.map((c) => (
                       <SelectItem key={c} value={c}>
-                        {categoryLabels[c]}
+                        {t.habits.categories[c]}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -150,15 +151,15 @@ export function HabitDialog({
               </Field>
               {!habit && (
                 <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium">Schedule</span>
+                  <span className="text-sm font-medium">{dlg.schedule}</span>
                   <Tabs
                     value={scheduleType}
                     onValueChange={(v) => setScheduleType(v as ScheduleType)}
                   >
                     <TabsList className="w-full">
-                      <TabsTrigger value="days">On selected days</TabsTrigger>
+                      <TabsTrigger value="days">{dlg.onDays}</TabsTrigger>
                       <TabsTrigger value="weekly_target">
-                        Times per week
+                        {dlg.perWeek}
                       </TabsTrigger>
                     </TabsList>
                   </Tabs>
@@ -170,7 +171,7 @@ export function HabitDialog({
           {scheduleType === "days" ? (
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium" id="habit-days-label">
-                Days
+                {dlg.days}
               </span>
               <ToggleGroup
                 multiple
@@ -183,19 +184,19 @@ export function HabitDialog({
               >
                 {allDays.map((d) => (
                   <ToggleGroupItem key={d} value={d} className="min-w-11">
-                    {weekdayLabels[Number(d)]}
+                    {weekdayLabel(t, Number(d))}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>
               {errors.daysOfWeek?.length ? (
                 <p className="text-destructive text-xs" role="alert">
-                  {errors.daysOfWeek[0]}
+                  {translate(errors.daysOfWeek[0])}
                 </p>
               ) : null}
             </div>
           ) : (
             <Field
-              label="Times per week"
+              label={dlg.timesPerWeek}
               htmlFor="habit-target"
               errors={errors.targetPerWeek}
             >
@@ -214,7 +215,7 @@ export function HabitDialog({
           )}
 
           {!linked && (
-            <Field label="Description" htmlFor="habit-description">
+            <Field label={dlg.descriptionLabel} htmlFor="habit-description">
               <Textarea
                 id="habit-description"
                 name="description"
@@ -226,7 +227,7 @@ export function HabitDialog({
         </form>
         <DialogFooter>
           <Button type="submit" form="habit-form" disabled={save.isPending}>
-            {save.isPending ? "Saving…" : "Save"}
+            {save.isPending ? t.common.saving : t.common.save}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -11,11 +11,12 @@ import type {
   ApplicationOutcome,
   ApplicationStatus,
 } from "@/modules/applications/applications.schema";
+import { useI18n } from "@/i18n/client";
 import {
   choiceKey,
-  outcomeLabels,
   statusChoices,
   statusDotClass,
+  statusText,
 } from "@/modules/applications/labels";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +28,7 @@ export function StatusSelect({
   onChange,
   size = "sm",
   className,
-  label = "Status",
+  label,
 }: {
   status: ApplicationStatus;
   outcome: ApplicationOutcome | null;
@@ -36,12 +37,13 @@ export function StatusSelect({
   className?: string;
   label?: string;
 }) {
+  const { t } = useI18n();
   // The trigger shows only the outcome for closed items ("Rejected"), which
   // fits narrow kanban cards; the open list shows the full "Closed · Rejected".
   const items = Object.fromEntries(
     statusChoices.map((c) => [
       c.key,
-      c.outcome ? outcomeLabels[c.outcome] : c.label,
+      c.outcome ? t.outcome[c.outcome] : t.status[c.status],
     ]),
   );
   return (
@@ -53,7 +55,11 @@ export function StatusSelect({
         if (choice) onChange(choice.status, choice.outcome);
       }}
     >
-      <SelectTrigger size={size} aria-label={label} className={cn(className)}>
+      <SelectTrigger
+        size={size}
+        aria-label={label ?? t.applications.status}
+        className={cn(className)}
+      >
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -66,7 +72,7 @@ export function StatusSelect({
               )}
               aria-hidden
             />
-            {choice.label}
+            {statusText(t, choice.status, choice.outcome)}
           </SelectItem>
         ))}
       </SelectContent>

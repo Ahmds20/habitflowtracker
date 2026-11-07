@@ -36,8 +36,26 @@ export async function getDashboard(user: SessionUser, now = new Date()) {
     0,
   );
 
+  // The habit with the longest running streak, for the dashboard stat card.
+  const bestStreak = manual.reduce<(typeof manual)[number] | null>(
+    (best, h) => (h.streak.current > (best?.streak.current ?? 0) ? h : best),
+    null,
+  );
+
   return {
     today,
+    // First name for the greeting; the full name is in the sidebar.
+    firstName: user.name.trim().split(/\s+/)[0] || user.name,
+    bestStreak: bestStreak
+      ? {
+          name: bestStreak.name,
+          current: bestStreak.streak.current,
+          unit:
+            bestStreak.scheduleType === "weekly_target"
+              ? ("week" as const)
+              : ("day" as const),
+        }
+      : null,
     week: {
       start: weekStart,
       end: addDays(weekStart, 6),

@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useI18n, useServerMessage } from "@/i18n/client";
+import type { Dictionary } from "@/i18n/dictionaries/en";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import {
   DEFAULT_WEEKLY_TARGET,
@@ -22,15 +24,18 @@ import {
 
 const starterKeys = Object.keys(starterHabits) as StarterHabitKey[];
 
-function scheduleText(key: StarterHabitKey) {
+function scheduleText(t: Dictionary, key: StarterHabitKey) {
   const { schedule } = starterHabits[key];
   return schedule.scheduleType === "days"
-    ? "Weekdays"
-    : `${schedule.targetPerWeek}× per week`;
+    ? t.habits.schedule.weekdays
+    : t.habits.schedule.perWeek(schedule.targetPerWeek);
 }
 
 export function OnboardingForm() {
   const router = useRouter();
+  const { t } = useI18n();
+  const translate = useServerMessage();
+  const o = t.onboarding;
   const [picked, setPicked] = useState<StarterHabitKey[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +58,7 @@ export function OnboardingForm() {
       weeklyTarget < 1 ||
       weeklyTarget > 50
     ) {
-      setError("Enter a whole number from 1 to 50.");
+      setError(o.targetInvalid);
       return;
     }
 
@@ -67,7 +72,9 @@ export function OnboardingForm() {
       // Already onboarded (double submit, another tab): just continue.
       if (!(err instanceof ApiError && err.status === 409)) {
         setError(
-          err instanceof ApiError ? err.message : "Could not reach the server.",
+          err instanceof ApiError
+            ? translate(err.message)
+            : t.common.noConnection,
         );
         setPending(false);
         return;
@@ -78,18 +85,15 @@ export function OnboardingForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md rounded-2xl shadow-xl shadow-emerald-900/5">
       <CardHeader>
-        <CardTitle className="text-xl">Set your weekly goal</CardTitle>
-        <CardDescription>
-          Consistency beats bursts. How many applications do you want to send
-          each week? It updates automatically as you add them.
-        </CardDescription>
+        <CardTitle className="text-xl">{o.title}</CardTitle>
+        <CardDescription>{o.description}</CardDescription>
       </CardHeader>
       <form method="post" onSubmit={onSubmit} noValidate>
         <CardContent className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="weeklyTarget">Applications per week</Label>
+            <Label htmlFor="weeklyTarget">{o.target}</Label>
             <Input
               id="weeklyTarget"
               name="weeklyTarget"
@@ -103,31 +107,31 @@ export function OnboardingForm() {
               aria-describedby={error ? "onboarding-error" : "target-hint"}
             />
             <p id="target-hint" className="text-muted-foreground text-xs">
-              You can change this later on the Habits page.
+              {o.targetHint}
             </p>
           </div>
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-2 text-sm font-medium">
-              Add a few habits to support your job hunt{" "}
+              {o.startersLegend}{" "}
               <span className="text-muted-foreground font-normal">
-                (optional)
+                ({t.common.optional})
               </span>
             </legend>
             {starterKeys.map((key) => (
               <label
                 key={key}
-                className="has-[:checked]:border-foreground/40 has-[:checked]:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm transition-colors"
+                className="flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition-colors has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-50/70 dark:has-[:checked]:border-emerald-800 dark:has-[:checked]:bg-emerald-950/30"
               >
                 <input
                   type="checkbox"
                   checked={picked.includes(key)}
                   onChange={() => toggle(key)}
-                  className="size-4 accent-current"
+                  className="size-4 accent-emerald-600"
                 />
-                <span className="flex-1">{starterHabits[key].name}</span>
+                <span className="flex-1 font-medium">{o.starters[key]}</span>
                 <span className="text-muted-foreground text-xs">
-                  {scheduleText(key)}
+                  {scheduleText(t, key)}
                 </span>
               </label>
             ))}
@@ -145,7 +149,7 @@ export function OnboardingForm() {
         </CardContent>
         <CardFooter className="mt-6 border-t pt-4">
           <Button type="submit" className="w-full" disabled={pending}>
-            {pending ? "Setting up…" : "Start tracking"}
+            {pending ? o.pending : o.submit}
           </Button>
         </CardFooter>
       </form>

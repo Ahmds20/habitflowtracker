@@ -3,6 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { todayIn, toDbDate } from "@/lib/date";
 import { AppError } from "@/lib/errors";
+import en, { type Dictionary } from "@/i18n/dictionaries/en";
 import type { SessionUser } from "@/modules/auth/session";
 import { starterHabits, type OnboardingInput } from "./onboarding.schema";
 
@@ -16,16 +17,19 @@ export async function isOnboarded(userId: string) {
   return linked !== null;
 }
 
+// Habit names are saved in the language the user onboarded in; after that
+// they are the user's own text and can be renamed.
 export async function completeOnboarding(
   user: SessionUser,
   input: OnboardingInput,
   now = new Date(),
+  t: Dictionary = en,
 ) {
   const startDate = toDbDate(todayIn(user.timezone, now));
 
   const linked = {
     userId: user.id,
-    name: `Send ${input.weeklyTarget} applications`,
+    name: t.onboarding.linkedName(input.weeklyTarget),
     category: "career" as const,
     scheduleType: "weekly_target" as const,
     targetPerWeek: input.weeklyTarget,
@@ -37,7 +41,7 @@ export async function completeOnboarding(
     const starter = starterHabits[key];
     return {
       userId: user.id,
-      name: starter.name,
+      name: t.onboarding.starters[key],
       category: starter.category,
       scheduleType: starter.schedule.scheduleType,
       daysOfWeek:

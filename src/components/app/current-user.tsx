@@ -20,10 +20,24 @@ export async function AppGuard() {
 
 export async function UserBadge() {
   const user = await requireUserOrRedirect();
+  const initials = user.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join("");
   return (
-    <div className="min-w-0">
-      <p className="truncate text-sm font-medium">{user.name}</p>
-      <p className="text-muted-foreground truncate text-xs">{user.email}</p>
+    <div className="bg-muted/60 flex min-w-0 items-center gap-3 rounded-xl border p-2.5">
+      <span
+        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-xs font-bold text-white"
+        aria-hidden
+      >
+        {initials || "?"}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold">{user.name}</p>
+        <p className="text-muted-foreground truncate text-xs">{user.email}</p>
+      </div>
     </div>
   );
 }
