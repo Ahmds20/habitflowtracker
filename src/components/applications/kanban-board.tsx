@@ -18,7 +18,8 @@ import type {
   ApplicationOutcome,
   ApplicationStatus,
 } from "@/modules/applications/applications.schema";
-import { statusDotClass, statusLabels } from "@/modules/applications/labels";
+import { useI18n } from "@/i18n/client";
+import { statusDotClass } from "@/modules/applications/labels";
 import type { ApplicationSummary } from "@/modules/applications/types";
 import { cn } from "@/lib/utils";
 import { ApplicationCard } from "./application-card";
@@ -49,6 +50,7 @@ export function KanbanBoard({
   onMove: Move;
   onRequestClose: (app: ApplicationSummary) => void;
 }) {
+  const { t } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     // Small distance so clicks on links and selects inside a card still work.
@@ -56,6 +58,9 @@ export function KanbanBoard({
     useSensor(KeyboardSensor),
   );
   const active = applications.find((a) => a.id === activeId);
+  const dnd = t.applications.dnd;
+  const name = (id: string | number) =>
+    applications.find((a) => a.id === id)?.company ?? "";
 
   function onDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id));
@@ -78,18 +83,22 @@ export function KanbanBoard({
       onDragCancel={() => setActiveId(null)}
       accessibility={{
         announcements: {
-          onDragStart: ({ active }) =>
-            `Picked up ${cardName(applications, active.id)}.`,
+          onDragStart: ({ active }) => dnd.pickedUp(name(active.id)),
           onDragOver: ({ active, over }) =>
             over
-              ? `${cardName(applications, active.id)} is over ${statusLabels[over.id as ApplicationStatus]}.`
-              : `${cardName(applications, active.id)} is not over a column.`,
+              ? dnd.over(
+                  name(active.id),
+                  t.status[over.id as ApplicationStatus],
+                )
+              : dnd.notOver(name(active.id)),
           onDragEnd: ({ active, over }) =>
             over
-              ? `${cardName(applications, active.id)} was moved to ${statusLabels[over.id as ApplicationStatus]}.`
-              : `${cardName(applications, active.id)} was dropped.`,
-          onDragCancel: ({ active }) =>
-            `Moving ${cardName(applications, active.id)} was cancelled.`,
+              ? dnd.moved(
+                  name(active.id),
+                  t.status[over.id as ApplicationStatus],
+                )
+              : dnd.dropped(name(active.id)),
+          onDragCancel: ({ active }) => dnd.cancelled(name(active.id)),
         },
       }}
     >
@@ -117,10 +126,6 @@ export function KanbanBoard({
   );
 }
 
-function cardName(applications: ApplicationSummary[], id: string | number) {
-  return applications.find((a) => a.id === id)?.company ?? "Card";
-}
-
 function Column({
   status,
   applications,
@@ -133,22 +138,23 @@ function Column({
   onRequestClose: (app: ApplicationSummary) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const { t } = useI18n();
   return (
     <section
       ref={setNodeRef}
-      aria-label={`${statusLabels[status]} column`}
+      aria-label={t.applications.column(t.status[status])}
       className={cn(
-        "bg-muted/50 flex min-h-64 min-w-0 flex-col gap-2 rounded-xl p-2 transition-colors",
-        isOver && "bg-muted ring-ring/40 ring-2",
+        "flex min-h-[28rem] min-w-0 flex-col gap-2.5 rounded-2xl border border-slate-200/80 bg-slate-100/70 p-2.5 transition-colors dark:border-slate-800 dark:bg-slate-900/50",
+        isOver && "ring-primary/40 bg-secondary ring-2",
       )}
     >
-      <h2 className="flex items-center gap-2 px-1 py-1 text-sm font-medium">
+      <h2 className="flex items-center gap-2 px-1.5 py-1 text-sm font-semibold">
         <span
           className={cn("size-2 rounded-full", statusDotClass[status])}
           aria-hidden
         />
-        {statusLabels[status]}
-        <span className="text-muted-foreground ml-auto text-xs tabular-nums">
+        {t.status[status]}
+        <span className="bg-background text-muted-foreground ml-auto rounded-full border px-2 py-0.5 text-xs font-medium tabular-nums">
           {applications.length}
         </span>
       </h2>
@@ -180,6 +186,7 @@ function DraggableCard({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: app.id,
   });
+  const { t } = useI18n();
   return (
     <div ref={setNodeRef} className={cn(isDragging && "opacity-40")}>
       <ApplicationCard
@@ -189,7 +196,7 @@ function DraggableCard({
           <button
             type="button"
             className="text-muted-foreground hover:text-foreground -ml-1 cursor-grab touch-none rounded p-0.5 active:cursor-grabbing"
-            aria-label={`Drag ${app.company}`}
+            aria-label={t.applications.drag(app.company)}
             {...listeners}
             {...attributes}
           >

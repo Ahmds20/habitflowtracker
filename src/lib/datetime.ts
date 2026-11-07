@@ -15,13 +15,30 @@ export function fromDateTimeLocalValue(value: string) {
   return new Date(value).toISOString();
 }
 
-export function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-GB", {
+// `intl` is a BCP 47 tag such as "en-GB" or "id-ID" (see i18n/config.ts).
+export function formatDateTime(iso: string, intl = "en-GB") {
+  return new Date(iso).toLocaleString(intl, {
     weekday: "short",
     day: "numeric",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+export function formatTime(iso: string, intl = "en-GB") {
+  return new Date(iso).toLocaleTimeString(intl, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function formatLongDay(iso: string, intl = "en-GB") {
+  return new Date(iso).toLocaleDateString(intl, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   });
 }

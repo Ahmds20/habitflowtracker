@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useI18n, useServerMessage } from "@/i18n/client";
 import { ApiError } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/datetime";
 import {
@@ -37,11 +38,10 @@ import {
   type EmploymentType,
 } from "@/modules/applications/applications.schema";
 import {
-  employmentTypeLabels,
   formatLocalDate,
-  outcomeLabels,
+  statusBadgeClass,
   statusDotClass,
-  statusLabels,
+  statusText,
 } from "@/modules/applications/labels";
 import type {
   ApplicationDetail as Detail,
@@ -49,23 +49,20 @@ import type {
 } from "@/modules/applications/types";
 import { cn } from "@/lib/utils";
 import { CloseApplicationDialog } from "./close-application-dialog";
-import {
-  Field,
-  InterviewDialog,
-  interviewTypeLabels,
-} from "./interview-dialog";
+import { Field, InterviewDialog } from "./interview-dialog";
 import { StatusSelect } from "./status-select";
 import {
-  errorMessage,
   useApplication,
   useChangeStatus,
   useDeleteApplication,
+  useErrorMessage,
   useUpdateApplication,
 } from "./use-applications";
 import { useDeleteInterview } from "./use-interviews";
 
 export function ApplicationDetailView({ id }: { id: string }) {
   const { data: app, isPending, error, refetch } = useApplication(id);
+  const { t } = useI18n();
 
   if (isPending) return <DetailSkeleton />;
   if (error) {
@@ -75,12 +72,12 @@ export function ApplicationDetailView({ id }: { id: string }) {
         <BackLink />
         <p className="text-sm">
           {missing
-            ? "This application does not exist or was deleted."
-            : "Could not load this application."}
+            ? t.applications.detail.missing
+            : t.applications.detail.loadFailed}
         </p>
         {!missing && (
           <Button variant="outline" onClick={() => refetch()}>
-            Try again
+            {t.common.tryAgain}
           </Button>
         )}
       </div>
@@ -90,18 +87,30 @@ export function ApplicationDetailView({ id }: { id: string }) {
 }
 
 function Loaded({ app }: { app: Detail }) {
+  const { t } = useI18n();
   const changeStatus = useChangeStatus();
   const [closing, setClosing] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
       <BackLink />
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="bg-card flex flex-wrap items-start justify-between gap-4 rounded-2xl border p-5 shadow-sm">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight break-words">
-            {app.company}
+          <span
+            className={cn(
+              "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+              statusBadgeClass[app.status],
+            )}
+          >
+            {statusText(t, app.status, app.outcome)}
+          </span>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight break-words">
+            {app.position}
           </h1>
-          <p className="text-muted-foreground">{app.position}</p>
+          <p className="text-muted-foreground font-medium">
+            {app.company}
+            {app.location && ` · ${app.location}`}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <StatusSelect
@@ -140,18 +149,22 @@ function Loaded({ app }: { app: Detail }) {
 }
 
 function BackLink() {
+  const { t } = useI18n();
   return (
     <Link
       href="/applications"
       className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-sm"
     >
       <ArrowLeftIcon className="size-4" aria-hidden />
-      Applications
+      {t.applications.detail.back}
     </Link>
   );
 }
 
 function DetailsForm({ app }: { app: Detail }) {
+  const { t } = useI18n();
+  const translate = useServerMessage();
+  const errorMessage = useErrorMessage();
   const update = useUpdateApplication(app.id);
   const [employmentType, setEmploymentType] = useState<EmploymentType | "">(
     app.employmentType ?? "",
@@ -179,45 +192,66 @@ function DetailsForm({ app }: { app: Detail }) {
         description: text("description"),
         notes: text("notes"),
       });
-      toast.success("Saved");
+      toast.success(t.common.saved);
     } catch (error) {
-      if (error instanceof ApiError && error.details) setErrors(error.details);
-      else toast.error(errorMessage(error));
+      if (error instanceof ApiError && error.details) {
+        setErrors(
+          Object.fromEntries(
+            Object.entries(error.details).map(([field, messages]) => [
+              field,
+              messages?.map(translate),
+            ]),
+          ),
+        );
+      } else toast.error(errorMessage(error));
     }
   }
 
+  const d = t.applications.detail;
+
   return (
     <form
+      method="post"
       onSubmit={onSubmit}
       noValidate
-      className="flex flex-col gap-4 rounded-xl border p-4"
+      className="bg-card flex flex-col gap-4 rounded-2xl border p-5 shadow-sm"
       // Re-mount after a save so the inputs show the saved (normalized) values.
       key={app.updatedAt}
     >
-      <h2 className="font-medium">Details</h2>
+      <h2 className="font-bold">{d.details}</h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Text name="company" label="Company" app={app} errors={errors} />
-        <Text name="position" label="Position" app={app} errors={errors} />
+        <Text
+          name="company"
+          label={t.applications.company}
+          app={app}
+          errors={errors}
+        />
+        <Text
+          name="position"
+          label={t.applications.position}
+          app={app}
+          errors={errors}
+        />
         <Text
           name="appliedDate"
-          label="Applied on"
+          label={t.applications.appliedOn}
           type="date"
           app={app}
           errors={errors}
-          hint={app.status === "wishlist" ? "Not applied yet" : undefined}
+          hint={app.status === "wishlist" ? d.notApplied : undefined}
         />
         <Text
           name="followUpDate"
-          label="Follow up on"
+          label={d.followUpOn}
           type="date"
           app={app}
           errors={errors}
-          hint="Shows on your dashboard when it is due"
+          hint={d.followUpHint}
         />
-        <Text name="location" label="Location" app={app} errors={errors} />
-        <Field label="Employment type" htmlFor="employmentType">
+        <Text name="location" label={d.location} app={app} errors={errors} />
+        <Field label={d.employmentType} htmlFor="employmentType">
           <Select
-            items={{ "": "Not set", ...employmentTypeLabels }}
+            items={{ "": t.common.notSet, ...t.employmentType }}
             value={employmentType}
             onValueChange={(value) =>
               setEmploymentType((value ?? "") as EmploymentType | "")
@@ -227,10 +261,10 @@ function DetailsForm({ app }: { app: Detail }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Not set</SelectItem>
-              {employmentTypes.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {employmentTypeLabels[t]}
+              <SelectItem value="">{t.common.notSet}</SelectItem>
+              {employmentTypes.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {t.employmentType[type]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -238,13 +272,13 @@ function DetailsForm({ app }: { app: Detail }) {
         </Field>
         <Text
           name="salaryExpectation"
-          label="Salary expectation"
+          label={d.salary}
           app={app}
           errors={errors}
         />
         <Text
           name="jobUrl"
-          label="Job posting link"
+          label={d.jobUrl}
           type="url"
           app={app}
           errors={errors}
@@ -256,13 +290,13 @@ function DetailsForm({ app }: { app: Detail }) {
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-xs"
               >
-                Open <ExternalLinkIcon className="size-3" aria-hidden />
+                {d.open} <ExternalLinkIcon className="size-3" aria-hidden />
               </a>
             ) : null
           }
         />
       </div>
-      <Field label="Job description" htmlFor="description">
+      <Field label={d.jobDescription} htmlFor="description">
         <Textarea
           id="description"
           name="description"
@@ -270,7 +304,7 @@ function DetailsForm({ app }: { app: Detail }) {
           defaultValue={app.description ?? ""}
         />
       </Field>
-      <Field label="Notes" htmlFor="notes">
+      <Field label={d.notes} htmlFor="notes">
         <Textarea
           id="notes"
           name="notes"
@@ -280,7 +314,7 @@ function DetailsForm({ app }: { app: Detail }) {
       </Field>
       <div className="flex justify-end">
         <Button type="submit" disabled={update.isPending}>
-          {update.isPending ? "Saving…" : "Save changes"}
+          {update.isPending ? t.common.saving : t.common.saveChanges}
         </Button>
       </div>
     </form>
@@ -340,6 +374,9 @@ function Text({
 }
 
 function Interviews({ app }: { app: Detail }) {
+  const { t, intl } = useI18n();
+  const errorMessage = useErrorMessage();
+  const iv = t.interviews;
   const [editing, setEditing] = useState<Interview | null>(null);
   const [open, setOpen] = useState(false);
   const remove = useDeleteInterview(app.id);
@@ -352,16 +389,16 @@ function Interviews({ app }: { app: Detail }) {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border p-4">
+    <section className="bg-card flex flex-col gap-3 rounded-2xl border p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <h2 className="font-medium">Interviews</h2>
+        <h2 className="font-bold">{iv.section}</h2>
         <Button size="sm" variant="outline" onClick={() => openDialog(null)}>
           <PlusIcon aria-hidden />
-          Schedule
+          {iv.schedule}
         </Button>
       </div>
       {app.interviews.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No interviews yet.</p>
+        <p className="text-muted-foreground text-sm">{iv.none}</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {app.interviews.map((interview) => {
@@ -377,19 +414,18 @@ function Interviews({ app }: { app: Detail }) {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-medium">
-                      {interview.title ||
-                        `${interviewTypeLabels[interview.type]} interview`}
+                      {interview.title || iv.typed(iv.types[interview.type])}
                     </p>
                     <p className="text-muted-foreground text-xs">
-                      {formatDateTime(interview.scheduledAt)} ·{" "}
-                      {interviewTypeLabels[interview.type]}
+                      {formatDateTime(interview.scheduledAt, intl)} ·{" "}
+                      {iv.types[interview.type]}
                     </p>
                   </div>
                   <div className="flex shrink-0">
                     <Button
                       size="icon-sm"
                       variant="ghost"
-                      aria-label="Edit interview"
+                      aria-label={iv.editLabel}
                       onClick={() => openDialog(interview)}
                     >
                       <PencilIcon aria-hidden />
@@ -397,10 +433,10 @@ function Interviews({ app }: { app: Detail }) {
                     <Button
                       size="icon-sm"
                       variant="ghost"
-                      aria-label="Delete interview"
+                      aria-label={iv.deleteLabel}
                       onClick={() =>
                         remove.mutate(interview.id, {
-                          onSuccess: () => toast.success("Interview deleted"),
+                          onSuccess: () => toast.success(iv.deleted),
                           onError: (error) => toast.error(errorMessage(error)),
                         })
                       }
@@ -416,7 +452,7 @@ function Interviews({ app }: { app: Detail }) {
                     rel="noopener noreferrer"
                     className="w-fit truncate text-xs underline underline-offset-4"
                   >
-                    Join meeting
+                    {iv.joinMeeting}
                   </a>
                 )}
               </li>
@@ -436,11 +472,13 @@ function Interviews({ app }: { app: Detail }) {
 }
 
 function Timeline({ app }: { app: Detail }) {
+  const { t, intl } = useI18n();
+  const d = t.applications.detail;
   // Newest first.
   const events = [...app.statusHistory].reverse();
   return (
-    <section className="flex flex-col gap-3 rounded-xl border p-4">
-      <h2 className="font-medium">History</h2>
+    <section className="bg-card flex flex-col gap-3 rounded-2xl border p-5 shadow-sm">
+      <h2 className="font-bold">{d.history}</h2>
       <ol className="flex flex-col gap-3">
         {events.map((event) => (
           <li key={event.id} className="flex gap-3 text-sm">
@@ -453,14 +491,13 @@ function Timeline({ app }: { app: Detail }) {
             />
             <div>
               <p>
-                {event.fromStatus === null ? "Added to " : "Moved to "}
-                <span className="font-medium">
-                  {statusLabels[event.toStatus]}
-                  {event.outcome && ` · ${outcomeLabels[event.outcome]}`}
+                {event.fromStatus === null ? d.addedTo : d.movedTo}
+                <span className="font-semibold">
+                  {statusText(t, event.toStatus, event.outcome)}
                 </span>
               </p>
               <p className="text-muted-foreground text-xs">
-                {formatDateTime(event.changedAt)}
+                {formatDateTime(event.changedAt, intl)}
               </p>
             </div>
           </li>
@@ -468,7 +505,7 @@ function Timeline({ app }: { app: Detail }) {
       </ol>
       {app.appliedDate && (
         <p className="text-muted-foreground border-t pt-3 text-xs">
-          Applied on {formatLocalDate(app.appliedDate)}
+          {d.appliedOn(formatLocalDate(app.appliedDate, intl))}
         </p>
       )}
     </section>
@@ -476,6 +513,9 @@ function Timeline({ app }: { app: Detail }) {
 }
 
 function DeleteButton({ app }: { app: Detail }) {
+  const { t } = useI18n();
+  const errorMessage = useErrorMessage();
+  const d = t.applications.detail;
   const [open, setOpen] = useState(false);
   const remove = useDeleteApplication();
   const router = useRouter();
@@ -485,7 +525,7 @@ function DeleteButton({ app }: { app: Detail }) {
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Delete application"
+        aria-label={d.deleteLabel}
         onClick={() => setOpen(true)}
       >
         <Trash2Icon aria-hidden />
@@ -493,15 +533,14 @@ function DeleteButton({ app }: { app: Detail }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete this application?</DialogTitle>
+            <DialogTitle>{d.deleteTitle}</DialogTitle>
             <DialogDescription>
-              {app.company} · {app.position}, its interviews, and its history
-              will be deleted. This cannot be undone.
+              {d.deleteBody(app.company, app.position)}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button
               variant="destructive"
@@ -509,14 +548,14 @@ function DeleteButton({ app }: { app: Detail }) {
               onClick={() =>
                 remove.mutate(app.id, {
                   onSuccess: () => {
-                    toast.success(`Deleted ${app.company}`);
+                    toast.success(d.deleted(app.company));
                     router.push("/applications");
                   },
                   onError: (error) => toast.error(errorMessage(error)),
                 })
               }
             >
-              {remove.isPending ? "Deleting…" : "Delete"}
+              {remove.isPending ? t.common.deleting : t.common.delete}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -526,8 +565,13 @@ function DeleteButton({ app }: { app: Detail }) {
 }
 
 function DetailSkeleton() {
+  const { t } = useI18n();
   return (
-    <div className="flex flex-col gap-6" aria-busy="true" aria-label="Loading">
+    <div
+      className="flex flex-col gap-6"
+      aria-busy="true"
+      aria-label={t.common.loading}
+    >
       <Skeleton className="h-4 w-28" />
       <Skeleton className="h-8 w-64" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">

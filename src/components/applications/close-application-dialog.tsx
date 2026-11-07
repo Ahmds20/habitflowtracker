@@ -12,7 +12,7 @@ import {
   applicationOutcomes,
   type ApplicationOutcome,
 } from "@/modules/applications/applications.schema";
-import { outcomeLabels } from "@/modules/applications/labels";
+import { useI18n } from "@/i18n/client";
 import type { ApplicationSummary } from "@/modules/applications/types";
 
 // Shown when a card is dropped on "Closed": closing requires an outcome.
@@ -25,13 +25,16 @@ export function CloseApplicationDialog({
   onPick: (app: ApplicationSummary, outcome: ApplicationOutcome) => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <Dialog open={app !== null} onOpenChange={(open) => !open && onCancel()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>How did it end?</DialogTitle>
+          <DialogTitle>{t.applications.closeTitle}</DialogTitle>
           <DialogDescription>
-            {app ? `Close ${app.company} · ${app.position}.` : null}
+            {app
+              ? t.applications.closeDescription(app.company, app.position)
+              : null}
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-3 gap-2">
@@ -41,7 +44,7 @@ export function CloseApplicationDialog({
               variant="outline"
               onClick={() => app && onPick(app, outcome)}
             >
-              {outcomeLabels[outcome]}
+              {t.outcome[outcome]}
             </Button>
           ))}
         </div>

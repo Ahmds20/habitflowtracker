@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PageHeader } from "@/components/app/page-header";
+import { TranslatedHeader } from "@/components/app/translated-header";
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 
 export const metadata: Metadata = { title: "Dashboard · HabitFlow" };
@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Dashboard · HabitFlow" };
 export default function Page() {
   return (
     <>
-      <PageHeader title="Dashboard" description="Your job hunt at a glance." />
+      <TranslatedHeader section="dashboard" />
       <DashboardView />
     </>
   );

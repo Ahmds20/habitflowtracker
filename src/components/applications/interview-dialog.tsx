@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useI18n, useServerMessage } from "@/i18n/client";
 import { ApiError } from "@/lib/api-client";
 import { fromDateTimeLocalValue, toDateTimeLocalValue } from "@/lib/datetime";
 import type { Interview } from "@/modules/applications/types";
@@ -28,12 +29,6 @@ import {
   type InterviewType,
 } from "@/modules/interviews/interviews.schema";
 import { useSaveInterview } from "./use-interviews";
-
-export const interviewTypeLabels: Record<InterviewType, string> = {
-  phone: "Phone",
-  video: "Video",
-  onsite: "On-site",
-};
 
 // Create (interview = null) or edit an interview.
 export function InterviewDialog({
@@ -47,6 +42,9 @@ export function InterviewDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useI18n();
+  const translate = useServerMessage();
+  const iv = t.interviews;
   const save = useSaveInterview(applicationId);
   const [type, setType] = useState<InterviewType>(interview?.type ?? "video");
   const [errors, setErrors] = useState<Record<string, string[] | undefined>>(
@@ -59,7 +57,7 @@ export function InterviewDialog({
     const form = new FormData(event.currentTarget);
     const when = String(form.get("scheduledAt") ?? "");
     if (!when) {
-      setErrors({ scheduledAt: ["Pick a date and time"] });
+      setErrors({ scheduledAt: [iv.pickWhen] });
       return;
     }
     try {
@@ -73,13 +71,15 @@ export function InterviewDialog({
           notes: form.get("notes"),
         },
       });
-      toast.success(interview ? "Interview updated" : "Interview scheduled");
+      toast.success(interview ? iv.updated : iv.scheduled);
       onOpenChange(false);
     } catch (error) {
       if (error instanceof ApiError && error.details) setErrors(error.details);
       else
         toast.error(
-          error instanceof ApiError ? error.message : "Could not save",
+          error instanceof ApiError
+            ? translate(error.message)
+            : t.common.couldNotSave,
         );
     }
   }
@@ -89,20 +89,21 @@ export function InterviewDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {interview ? "Edit interview" : "Schedule interview"}
+            {interview ? iv.editTitle : iv.scheduleTitle}
           </DialogTitle>
         </DialogHeader>
         {/* key resets the uncontrolled inputs when switching interviews */}
         <form
           key={interview?.id ?? "new"}
           id="interview-form"
+          method="post"
           onSubmit={onSubmit}
           noValidate
           className="flex flex-col gap-4"
         >
           <div className="grid grid-cols-2 gap-3">
             <Field
-              label="Date and time"
+              label={iv.when}
               htmlFor="iv-when"
               errors={errors.scheduledAt}
             >
@@ -116,9 +117,9 @@ export function InterviewDialog({
                 aria-invalid={errors.scheduledAt ? true : undefined}
               />
             </Field>
-            <Field label="Type" htmlFor="iv-type">
+            <Field label={iv.type} htmlFor="iv-type">
               <Select
-                items={interviewTypeLabels}
+                items={iv.types}
                 value={type}
                 onValueChange={(value) =>
                   value && setType(value as InterviewType)
@@ -128,20 +129,16 @@ export function InterviewDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {interviewTypes.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {interviewTypeLabels[t]}
+                  {interviewTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {iv.types[type]}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </Field>
           </div>
-          <Field
-            label="Title"
-            htmlFor="iv-title"
-            hint="For example: HR screening, Technical round"
-          >
+          <Field label={iv.titleLabel} htmlFor="iv-title" hint={iv.titleHint}>
             <Input
               id="iv-title"
               name="title"
@@ -149,7 +146,7 @@ export function InterviewDialog({
             />
           </Field>
           <Field
-            label="Meeting link"
+            label={iv.meetingLink}
             htmlFor="iv-url"
             errors={errors.meetingUrl}
           >
@@ -162,7 +159,7 @@ export function InterviewDialog({
               aria-invalid={errors.meetingUrl ? true : undefined}
             />
           </Field>
-          <Field label="Preparation notes" htmlFor="iv-notes">
+          <Field label={iv.prepNotes} htmlFor="iv-notes">
             <Textarea
               id="iv-notes"
               name="notes"
@@ -173,7 +170,7 @@ export function InterviewDialog({
         </form>
         <DialogFooter>
           <Button type="submit" form="interview-form" disabled={save.isPending}>
-            {save.isPending ? "Saving…" : "Save"}
+            {save.isPending ? t.common.saving : t.common.save}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -194,13 +191,15 @@ export function Field({
   errors?: string[];
   children: React.ReactNode;
 }) {
+  // Field errors come from the API in English; show them in the current language.
+  const translate = useServerMessage();
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
       {errors?.length ? (
         <p className="text-destructive text-xs" role="alert">
-          {errors[0]}
+          {translate(errors[0])}
         </p>
       ) : (
         hint && <p className="text-muted-foreground text-xs">{hint}</p>

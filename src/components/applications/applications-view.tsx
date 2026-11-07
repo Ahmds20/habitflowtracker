@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ApplicationStatus } from "@/modules/applications/applications.schema";
-import { statusLabels } from "@/modules/applications/labels";
+import { useI18n } from "@/i18n/client";
 import type { ApplicationSummary } from "@/modules/applications/types";
 import { AddApplicationDialog } from "./add-application-dialog";
 import { ApplicationCard } from "./application-card";
@@ -16,6 +16,7 @@ import { KanbanBoard, boardColumns } from "./kanban-board";
 import { useApplications, useChangeStatus } from "./use-applications";
 
 export function ApplicationsView() {
+  const { t } = useI18n();
   const { data, isPending, isError, refetch } = useApplications();
   const changeStatus = useChangeStatus();
   const [query, setQuery] = useState("");
@@ -42,7 +43,7 @@ export function ApplicationsView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="bg-card flex flex-wrap items-center gap-3 rounded-2xl border p-3 shadow-sm">
         <div className="relative min-w-48 flex-1 sm:max-w-xs">
           <SearchIcon
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
@@ -50,8 +51,8 @@ export function ApplicationsView() {
           />
           <Input
             type="search"
-            placeholder="Search company or position"
-            aria-label="Search applications"
+            placeholder={t.applications.search}
+            aria-label={t.applications.searchLabel}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-8"
@@ -65,10 +66,10 @@ export function ApplicationsView() {
       {isPending ? (
         <BoardSkeleton />
       ) : isError ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border p-10 text-center">
-          <p className="text-sm">Could not load your applications.</p>
+        <div className="bg-card flex flex-col items-center gap-3 rounded-2xl border p-10 text-center">
+          <p className="text-sm">{t.applications.loadFailed}</p>
           <Button variant="outline" onClick={() => refetch()}>
-            Try again
+            {t.common.tryAgain}
           </Button>
         </div>
       ) : data.length === 0 ? (
@@ -96,7 +97,7 @@ export function ApplicationsView() {
                 <TabsList>
                   {boardColumns.map((status) => (
                     <TabsTrigger key={status} value={status} className="px-2.5">
-                      {statusLabels[status]}
+                      {t.status[status]}
                       <span className="text-muted-foreground tabular-nums">
                         {counts[status]}
                       </span>
@@ -118,8 +119,8 @@ export function ApplicationsView() {
               ))}
             {counts[tab] === 0 && (
               <p className="text-muted-foreground py-8 text-center text-sm">
-                Nothing in {statusLabels[tab]}
-                {query && " matching your search"}.
+                {t.applications.nothingIn(t.status[tab])}
+                {query && t.applications.matchingSearch}.
               </p>
             )}
           </div>
@@ -139,13 +140,16 @@ export function ApplicationsView() {
 }
 
 function EmptyState() {
+  const { t } = useI18n();
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-10 text-center">
-      <BriefcaseIcon className="text-muted-foreground size-8" aria-hidden />
+    <div className="bg-card flex flex-col items-center gap-3 rounded-2xl border border-dashed p-10 text-center">
+      <span className="bg-secondary text-secondary-foreground flex size-12 items-center justify-center rounded-2xl">
+        <BriefcaseIcon className="size-6" aria-hidden />
+      </span>
       <div>
-        <p className="font-medium">No applications yet</p>
+        <p className="font-semibold">{t.applications.emptyTitle}</p>
         <p className="text-muted-foreground text-sm">
-          Add the first job you applied to, or one you plan to apply to.
+          {t.applications.emptyBody}
         </p>
       </div>
       <AddApplicationDialog />
@@ -154,11 +158,12 @@ function EmptyState() {
 }
 
 function BoardSkeleton() {
+  const { t } = useI18n();
   return (
     <div
       className="grid grid-cols-1 gap-3 lg:grid-cols-6"
       aria-busy="true"
-      aria-label="Loading"
+      aria-label={t.common.loading}
     >
       {Array.from({ length: 6 }, (_, i) => (
         <div

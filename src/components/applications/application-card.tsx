@@ -6,7 +6,8 @@ import type {
   ApplicationOutcome,
   ApplicationStatus,
 } from "@/modules/applications/applications.schema";
-import { formatLocalDate } from "@/modules/applications/labels";
+import { useI18n } from "@/i18n/client";
+import { formatLocalDate, statusDotClass } from "@/modules/applications/labels";
 import type { ApplicationSummary } from "@/modules/applications/types";
 import { cn } from "@/lib/utils";
 import { StatusSelect } from "./status-select";
@@ -25,19 +26,28 @@ export function ApplicationCard({
   className?: string;
   dragHandle?: React.ReactNode;
 }) {
+  const { t, intl } = useI18n();
   return (
     <article
       className={cn(
-        "bg-card flex flex-col gap-2 rounded-lg border p-3 text-sm shadow-xs",
+        "bg-card relative flex flex-col gap-2.5 overflow-hidden rounded-xl border p-3.5 pl-4 text-sm shadow-sm transition-shadow hover:shadow-md",
         className,
       )}
     >
+      {/* Status colour strip on the left edge, as in the design reference. */}
+      <span
+        className={cn(
+          "absolute inset-y-0 left-0 w-1",
+          statusDotClass[app.status],
+        )}
+        aria-hidden
+      />
       <div className="flex items-start gap-2">
         {dragHandle}
         <div className="min-w-0 flex-1">
           <Link
             href={`/applications/${app.id}`}
-            className="block truncate font-medium hover:underline"
+            className="block truncate font-semibold hover:underline"
           >
             {app.company}
           </Link>
@@ -48,7 +58,7 @@ export function ApplicationCard({
         {app.appliedDate && (
           <span className="flex items-center gap-1">
             <CalendarIcon className="size-3" aria-hidden />
-            {formatLocalDate(app.appliedDate)}
+            {formatLocalDate(app.appliedDate, intl)}
           </span>
         )}
         {app.location && (
@@ -62,7 +72,7 @@ export function ApplicationCard({
         status={app.status}
         outcome={app.outcome}
         onChange={onStatusChange}
-        label={`Status of ${app.company}`}
+        label={t.applications.statusOf(app.company)}
         className="w-full"
       />
     </article>

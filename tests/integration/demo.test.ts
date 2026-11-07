@@ -10,6 +10,7 @@ import {
 } from "@/modules/demo/demo.service";
 import { getHabit, listHabits } from "@/modules/habits/habits.service";
 import { isOnboarded } from "@/modules/onboarding/onboarding.service";
+import id from "@/i18n/dictionaries/id";
 import { createTestUser } from "./helpers";
 
 // Wednesday 11 November 2026, 10:00 in Jakarta.
@@ -102,6 +103,23 @@ describe("createDemoUser", () => {
     expect(await db.application.count({ where: { userId: a.user.id } })).toBe(
       15,
     );
+  });
+
+  it("writes sample data in the visitor's language", async () => {
+    const { userId } = await createDemoUser("Asia/Jakarta", NOW, id);
+    const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
+    const names = (
+      await db.habit.findMany({ where: { userId }, select: { name: true } })
+    ).map((h) => h.name);
+
+    expect(user.name).toBe("Pengguna Demo");
+    expect(names).toContain("Kirim 5 lamaran");
+    expect(names).toContain("Latihan coding");
+    expect(
+      await db.interview.count({
+        where: { application: { userId }, title: "Interview teknis" },
+      }),
+    ).toBeGreaterThan(0);
   });
 
   it("cannot be logged in to with a password", async () => {

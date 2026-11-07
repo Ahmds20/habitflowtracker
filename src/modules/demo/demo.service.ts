@@ -10,6 +10,7 @@ import {
   type LocalDate,
 } from "@/lib/date";
 import type { ApplicationStatus } from "@/modules/applications/applications.schema";
+import en, { type Dictionary } from "@/i18n/dictionaries/en";
 import { createSession } from "@/modules/auth/session";
 
 // "Try demo" creates a fresh, private demo account per visitor (decision D9),
@@ -32,7 +33,7 @@ type Seed = {
   appliedDaysAgo: number | null;
   followUpInDays?: number;
   interviewInDays?: number;
-  notes?: string;
+  note?: "referralNote" | "offerNote";
 };
 
 const applicationSeeds: Seed[] = [
@@ -43,7 +44,7 @@ const applicationSeeds: Seed[] = [
     path: ["applied", "assessment", "interview"],
     appliedDaysAgo: 16,
     interviewInDays: 2,
-    notes: "Referral from a friend on the web platform team.",
+    note: "referralNote",
   },
   {
     company: "Gojek",
@@ -59,7 +60,7 @@ const applicationSeeds: Seed[] = [
     location: "Tangerang",
     path: ["applied", "assessment", "interview", "offer"],
     appliedDaysAgo: 30,
-    notes: "Offer call scheduled. Compare with other offers before answering.",
+    note: "offerNote",
   },
   {
     company: "Shopee",
@@ -154,26 +155,26 @@ const applicationSeeds: Seed[] = [
 
 const habitSeeds = [
   {
-    name: "Practice coding",
+    key: "practice_coding",
     category: "learning",
     schedule: { scheduleType: "days", daysOfWeek: [1, 2, 3, 4, 5] },
     hitRate: 0.85,
   },
   {
-    name: "Study English",
+    key: "study_english",
     category: "learning",
     // Every day, so a visitor always has a habit to check in, even on weekends.
     schedule: { scheduleType: "days", daysOfWeek: [1, 2, 3, 4, 5, 6, 7] },
     hitRate: 0.7,
   },
   {
-    name: "Update portfolio or CV",
+    key: "update_portfolio",
     category: "career",
     schedule: { scheduleType: "weekly_target", targetPerWeek: 1 },
     hitRate: 0.3,
   },
   {
-    name: "Exercise for 30 minutes",
+    key: "exercise",
     category: "health",
     schedule: { scheduleType: "weekly_target", targetPerWeek: 3 },
     hitRate: 0.5,
@@ -195,7 +196,7 @@ function atLocalHour(date: LocalDate, hourUtc: number) {
   return new Date(`${date}T${String(hourUtc).padStart(2, "0")}:00:00.000Z`);
 }
 
-function buildApplications(userId: string, today: LocalDate) {
+function buildApplications(userId: string, today: LocalDate, t: Dictionary) {
   const applications: Prisma.ApplicationCreateManyInput[] = [];
   const events: Prisma.ApplicationStatusEventCreateManyInput[] = [];
   const interviews: Prisma.InterviewCreateManyInput[] = [];
@@ -242,7 +243,7 @@ function buildApplications(userId: string, today: LocalDate) {
         seed.followUpInDays === undefined
           ? null
           : toDbDate(addDays(today, seed.followUpInDays)),
-      notes: seed.notes ?? null,
+      notes: seed.note ? t.demoData[seed.note] : null,
       statusChangedAt: new Date(
         atLocalHour(changeDates.at(-1)!, 2).getTime() + index * 60_000,
       ),
@@ -254,9 +255,9 @@ function buildApplications(userId: string, today: LocalDate) {
         // 10:00 Jakarta = 03:00 UTC; close enough for any demo visitor.
         scheduledAt: atLocalHour(addDays(today, seed.interviewInDays), 3),
         type: "video",
-        title: "Technical interview",
+        title: t.demoData.interviewTitle,
         meetingUrl: "https://meet.example.com/habitflow-demo",
-        notes: "Review system design basics and recent projects.",
+        notes: t.demoData.interviewNotes,
       });
     }
   });
@@ -264,7 +265,7 @@ function buildApplications(userId: string, today: LocalDate) {
   return { applications, events, interviews };
 }
 
-function buildHabits(userId: string, today: LocalDate) {
+function buildHabits(userId: string, today: LocalDate, t: Dictionary) {
   const habits: Prisma.HabitCreateManyInput[] = [];
   const checkins: Prisma.HabitCheckinCreateManyInput[] = [];
   const startDate = addDays(today, -HISTORY_DAYS);
@@ -272,7 +273,7 @@ function buildHabits(userId: string, today: LocalDate) {
 
   habits.push({
     userId,
-    name: `Send ${DEMO_WEEKLY_TARGET} applications`,
+    name: t.onboarding.linkedName(DEMO_WEEKLY_TARGET),
     category: "career",
     scheduleType: "weekly_target",
     targetPerWeek: DEMO_WEEKLY_TARGET,
@@ -286,7 +287,7 @@ function buildHabits(userId: string, today: LocalDate) {
     habits.push({
       id,
       userId,
-      name: seed.name,
+      name: t.onboarding.starters[seed.key],
       category: seed.category,
       scheduleType: schedule.scheduleType,
       daysOfWeek:
@@ -313,19 +314,23 @@ function buildHabits(userId: string, today: LocalDate) {
   return { habits, checkins };
 }
 
-export async function createDemoUser(timezone: string, now = new Date()) {
+export async function createDemoUser(
+  timezone: string,
+  now = new Date(),
+  t: Dictionary = en,
+) {
   const today = todayIn(timezone, now);
   const id = crypto.randomUUID();
 
-  const { applications, events, interviews } = buildApplications(id, today);
-  const { habits, checkins } = buildHabits(id, today);
+  const { applications, events, interviews } = buildApplications(id, today, t);
+  const { habits, checkins } = buildHabits(id, today, t);
 
   await db.$transaction([
     db.user.create({
       data: {
         id,
         email: `demo-${id}@demo.habitflow.local`,
-        name: "Demo User",
+        name: t.demoData.userName,
         timezone,
         isDemo: true,
         // Not a valid argon2 hash, so no password can ever log in to this account.

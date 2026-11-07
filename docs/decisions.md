@@ -166,3 +166,24 @@ A log of product and technical decisions made during planning. Each entry record
 
 - **Decision:** One page: headline, short description, "Try the demo" and "Create an account", a week-of-applications illustration built from real markup, and three plain value points. The only animation is the illustration filling in once on load, and it is skipped with reduced motion.
 - **Why:** Matches D10. The illustration explains the weekly goal faster than a screenshot and stays sharp at any size.
+
+### D34. Language in a cookie, URLs unchanged
+
+- **Decision:** English and Indonesian. The choice is stored in the `hf-locale` cookie; the first visit follows the browser's `Accept-Language`. URLs are the same in both languages (no `/id/...` prefix). Dictionaries live in `src/i18n/dictionaries`; `id.ts` is type-checked against `en.ts`, so a missing key is a compile error. API error messages stay in English and are translated in the browser through `t.serverMessages`.
+- **Why:** The app sits behind a login, so per-language URLs add no SEO value but would move every route under `app/[lang]`. A cookie keeps routing as it is.
+- **Data:** Habit names created during onboarding and in demo accounts are written in the language in use at that moment; after that they are the user's own text.
+
+### D35. Theme without a library
+
+- **Decision:** Light, dark, or system (default). The choice is stored in `localStorage` and applied by an inline `<head>` script before the first paint, as in the Next.js "Preventing flash before hydration" guide. `next-themes` was removed; a 70-line hook covers what the app needs.
+- **Why:** No flash on load, no dependency, and the root layout stays prerenderable because it never reads the theme on the server.
+
+### D36. Visual redesign from the design reference
+
+- **Decision:** Emerald as the brand colour with teal, amber, and rose accents on slate neutrals, defined as CSS tokens for both themes. The reference's greeting banner, stat cards, tinted category pills, and status colours were adopted. Features in the reference that the product does not have yet were not built; they are listed in `docs/backlog.md`.
+- **Why:** The redesign changes how the app looks, not what it does, so it ships without schema or API changes.
+
+### D37. One logo, drawn as a vector
+
+- **Decision:** The logo (`design/logo habitflow.jpg`) was traced into a single SVG path. In the app it is a React component (`LogoMark`) that takes the theme's primary colour. Icons follow the Next.js file conventions: `app/icon.svg` (switches colour with the system theme), `app/favicon.ico` (16, 32, 48 px for older browsers), and `app/apple-icon.png` (180 px on a white tile, since iOS fills transparency with black). `public/logo.svg` is the plain black master.
+- **Why:** A vector stays sharp at every size, recolours for light and dark, and weighs 4 KB instead of the 600 KB source JPG.

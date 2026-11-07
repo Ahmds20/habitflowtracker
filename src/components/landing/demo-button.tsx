@@ -3,12 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/i18n/client";
 import { ApiError, apiFetch } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 // Creates a private demo account with sample data, then opens the dashboard.
 export function DemoButton({ className }: { className?: string }) {
   const router = useRouter();
+  const { t } = useI18n();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,8 +29,8 @@ export function DemoButton({ className }: { className?: string }) {
     } catch (err) {
       setError(
         err instanceof ApiError && err.status === 429
-          ? "Too many demos from your network. Try again in an hour, or create an account."
-          : "Could not start the demo. Try again.",
+          ? t.landing.demoRateLimited
+          : t.landing.demoFailed,
       );
       setPending(false);
     }
@@ -42,7 +44,7 @@ export function DemoButton({ className }: { className?: string }) {
         disabled={pending}
         className={cn("h-11 px-5 text-base", className)}
       >
-        {pending ? "Preparing your demo…" : "Try the demo"}
+        {pending ? t.landing.preparingDemo : t.landing.tryDemo}
       </Button>
       {error && (
         <p role="alert" className="text-destructive max-w-xs text-sm">

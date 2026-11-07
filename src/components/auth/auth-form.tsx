@@ -14,39 +14,22 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useI18n, useServerMessage } from "@/i18n/client";
 import { ApiError, apiFetch, safeNextPath } from "@/lib/api-client";
 
 type Mode = "login" | "register";
 type FieldErrors = Record<string, string[] | undefined>;
 
-const copy = {
-  login: {
-    title: "Welcome back",
-    description: "Log in to keep your job hunt on track.",
-    submit: "Log in",
-    pending: "Logging in…",
-    switchText: "No account yet?",
-    switchLink: "Create one",
-    switchHref: "/register",
-  },
-  register: {
-    title: "Create your account",
-    description:
-      "Track applications and stay consistent until you land the job.",
-    submit: "Create account",
-    pending: "Creating account…",
-    switchText: "Already have an account?",
-    switchLink: "Log in",
-    switchHref: "/login",
-  },
-} as const;
+const switchHref = { login: "/register", register: "/login" } as const;
 
 export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const text = copy[mode];
+  const { t } = useI18n();
+  const translate = useServerMessage();
+  const text = t.auth[mode];
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,17 +61,24 @@ export function AuthForm({ mode }: { mode: Mode }) {
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError) {
-        setFormError(error.details ? null : error.message);
-        setFieldErrors(error.details ?? {});
+        setFormError(error.details ? null : translate(error.message));
+        setFieldErrors(
+          Object.fromEntries(
+            Object.entries(error.details ?? {}).map(([field, messages]) => [
+              field,
+              messages?.map(translate),
+            ]),
+          ),
+        );
       } else {
-        setFormError("Could not reach the server. Check your connection.");
+        setFormError(t.common.noConnection);
       }
       setPending(false);
     }
   }
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm rounded-2xl shadow-xl shadow-emerald-900/5">
       <CardHeader>
         <CardTitle className="text-xl">{text.title}</CardTitle>
         <CardDescription>{text.description}</CardDescription>
@@ -99,27 +89,27 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <CardContent className="flex flex-col gap-4">
           {mode === "register" && (
             <Field
-              label="Name"
+              label={t.auth.name}
               name="name"
               autoComplete="name"
               errors={fieldErrors.name}
             />
           )}
           <Field
-            label="Email"
+            label={t.auth.email}
             name="email"
             type="email"
             autoComplete="email"
             errors={fieldErrors.email}
           />
           <Field
-            label="Password"
+            label={t.auth.password}
             name="password"
             type="password"
             autoComplete={
               mode === "login" ? "current-password" : "new-password"
             }
-            hint={mode === "register" ? "At least 8 characters." : undefined}
+            hint={mode === "register" ? t.auth.passwordHint : undefined}
             errors={fieldErrors.password}
           />
           {formError && (
@@ -135,8 +125,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
           <p className="text-muted-foreground text-sm">
             {text.switchText}{" "}
             <Link
-              href={text.switchHref}
-              className="text-foreground underline underline-offset-4"
+              href={switchHref[mode]}
+              className="text-primary font-semibold underline underline-offset-4"
             >
               {text.switchLink}
             </Link>

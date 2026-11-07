@@ -4,7 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 import type { Habit, HabitDetail } from "@/modules/habits/types";
-import { errorMessage } from "@/components/applications/use-applications";
+import { useErrorMessage } from "@/components/applications/use-applications";
+import { useI18n } from "@/i18n/client";
 import { dashboardKey } from "@/components/dashboard/use-dashboard";
 import type { Dashboard } from "@/modules/dashboard/types";
 
@@ -86,6 +87,8 @@ type Toggle = { habit: Habit; date: string; done: boolean };
 // and offers Undo, which is just the opposite toggle.
 export function useToggleCheckin() {
   const client = useQueryClient();
+  const { t } = useI18n();
+  const errorMessage = useErrorMessage();
 
   const mutation = useMutation({
     mutationFn: ({ habit, date, done }: Toggle) =>
@@ -147,10 +150,12 @@ export function useToggleCheckin() {
       {
         onSuccess: () =>
           toast.success(
-            done ? `${habit.name}: done` : `${habit.name}: check-in removed`,
+            done
+              ? t.habits.checkedIn(habit.name)
+              : t.habits.checkinRemoved(habit.name),
             {
               action: {
-                label: "Undo",
+                label: t.common.undo,
                 onClick: () => mutation.mutate({ habit, date, done: !done }),
               },
             },

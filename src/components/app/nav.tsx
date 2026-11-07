@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useI18n } from "@/i18n/client";
 import { cn } from "@/lib/utils";
 import { bottomNavItems, sidebarItems } from "./nav-items";
 
@@ -17,9 +18,10 @@ function isActive(
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
   return (
-    <nav aria-label="Main" className="flex flex-col gap-1">
-      {sidebarItems.map(({ href, label, icon: Icon }) => {
+    <nav aria-label={t.nav.main} className="flex flex-col gap-1">
+      {sidebarItems.map(({ href, key, icon: Icon }) => {
         const active = isActive(pathname, href);
         return (
           <Link
@@ -27,14 +29,14 @@ export function SidebarNav() {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
               active
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                ? "bg-primary text-primary-foreground shadow-md shadow-emerald-600/20"
+                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             )}
           >
-            <Icon className="size-4" aria-hidden />
-            {label}
+            <Icon className="size-[18px] shrink-0" aria-hidden />
+            {t.nav[key]}
           </Link>
         );
       })}
@@ -44,13 +46,14 @@ export function SidebarNav() {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useI18n();
   return (
     <nav
-      aria-label="Main"
-      className="bg-background fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] md:hidden"
+      aria-label={t.nav.main}
+      className="bg-card/95 fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
       {bottomNavItems.map((item) => {
-        const { href, label, icon: Icon } = item;
+        const { href, key, icon: Icon } = item;
         const active = isActive(
           pathname,
           href,
@@ -63,11 +66,11 @@ export function BottomNav() {
             aria-current={active ? "page" : undefined}
             className={cn(
               "flex flex-col items-center gap-1 py-2 text-xs font-medium",
-              active ? "text-foreground" : "text-muted-foreground",
+              active ? "text-primary" : "text-muted-foreground",
             )}
           >
             <Icon className="size-5" aria-hidden />
-            {label}
+            {t.nav[key]}
           </Link>
         );
       })}

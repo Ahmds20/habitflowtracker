@@ -22,8 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n, useServerMessage } from "@/i18n/client";
 import { ApiError } from "@/lib/api-client";
-import { statusLabels } from "@/modules/applications/labels";
 import { useCreateApplication } from "./use-applications";
 
 const startStatuses = [
@@ -35,7 +35,13 @@ const startStatuses = [
 ] as const;
 
 // Quick add: only the essentials. Everything else is filled in on the detail page.
-export function AddApplicationDialog() {
+export function AddApplicationDialog({
+  variant = "default",
+}: {
+  variant?: "default" | "outline";
+}) {
+  const { t } = useI18n();
+  const translate = useServerMessage();
   const [open, setOpen] = useState(false);
   const [status, setStatus] =
     useState<(typeof startStatuses)[number]>("applied");
@@ -57,54 +63,60 @@ export function AddApplicationDialog() {
         // Empty means "today" (the server fills it in) or none for wishlist.
         ...(appliedDate && status !== "wishlist" && { appliedDate }),
       });
-      toast.success(`Added ${app.company}`);
+      toast.success(t.applications.added(app.company));
       setOpen(false);
       setStatus("applied");
     } catch (error) {
       if (error instanceof ApiError && error.details) setErrors(error.details);
       else
         toast.error(
-          error instanceof ApiError ? error.message : "Could not add",
+          error instanceof ApiError
+            ? translate(error.message)
+            : t.applications.couldNotAdd,
         );
     }
   }
 
+  const fieldError = (name: string) => {
+    const message = errors[name]?.[0];
+    return message ? translate(message) : undefined;
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>
+      <DialogTrigger render={<Button variant={variant} />}>
         <PlusIcon aria-hidden />
-        Add application
+        {t.applications.add}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add application</DialogTitle>
-          <DialogDescription>
-            Add the basics now. You can fill in the rest later.
-          </DialogDescription>
+          <DialogTitle>{t.applications.add}</DialogTitle>
+          <DialogDescription>{t.applications.addDescription}</DialogDescription>
         </DialogHeader>
         <form
           id="add-application"
+          method="post"
           onSubmit={onSubmit}
           noValidate
           className="flex flex-col gap-4"
         >
           <TextField
             name="company"
-            label="Company"
+            label={t.applications.company}
             autoFocus
-            errors={errors.company}
+            error={fieldError("company")}
           />
           <TextField
             name="position"
-            label="Position"
-            errors={errors.position}
+            label={t.applications.position}
+            error={fieldError("position")}
           />
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="add-status">Status</Label>
+              <Label htmlFor="add-status">{t.applications.status}</Label>
               <Select
                 items={Object.fromEntries(
-                  startStatuses.map((s) => [s, statusLabels[s]]),
+                  startStatuses.map((s) => [s, t.status[s]]),
                 )}
                 value={status}
                 onValueChange={(value) =>
@@ -117,7 +129,7 @@ export function AddApplicationDialog() {
                 <SelectContent>
                   {startStatuses.map((s) => (
                     <SelectItem key={s} value={s}>
-                      {statusLabels[s]}
+                      {t.status[s]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -126,10 +138,10 @@ export function AddApplicationDialog() {
             {status !== "wishlist" && (
               <TextField
                 name="appliedDate"
-                label="Applied on"
+                label={t.applications.appliedOn}
                 type="date"
-                hint="Leave empty for today"
-                errors={errors.appliedDate}
+                hint={t.applications.appliedHint}
+                error={fieldError("appliedDate")}
               />
             )}
           </div>
@@ -140,7 +152,7 @@ export function AddApplicationDialog() {
             form="add-application"
             disabled={create.isPending}
           >
-            {create.isPending ? "Adding…" : "Add"}
+            {create.isPending ? t.common.adding : t.common.add}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -154,14 +166,14 @@ function TextField({
   type = "text",
   hint,
   autoFocus,
-  errors,
+  error,
 }: {
   name: string;
   label: string;
   type?: string;
   hint?: string;
   autoFocus?: boolean;
-  errors?: string[];
+  error?: string;
 }) {
   const id = `add-${name}`;
   return (
@@ -172,12 +184,12 @@ function TextField({
         name={name}
         type={type}
         autoFocus={autoFocus}
-        aria-invalid={errors?.length ? true : undefined}
-        aria-describedby={errors?.length ? `${id}-error` : undefined}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : undefined}
       />
-      {errors?.length ? (
+      {error ? (
         <p id={`${id}-error`} className="text-destructive text-xs">
-          {errors[0]}
+          {error}
         </p>
       ) : (
         hint && <p className="text-muted-foreground text-xs">{hint}</p>
