@@ -48,7 +48,13 @@ export const changePasswordSchema = z.object({
   newPassword: password,
 });
 
+// Demo accounts have no password, so for them the field is optional.
+export const deleteAccountSchema = z.object({
+  password: z.string().max(128).optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;

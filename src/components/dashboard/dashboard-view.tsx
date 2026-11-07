@@ -159,22 +159,22 @@ const statTone = {
   emerald: {
     card: "border-emerald-100 dark:border-emerald-950/80",
     icon: "border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-400",
-    note: "text-emerald-600 dark:text-emerald-400",
+    note: "text-emerald-700 dark:text-emerald-400",
   },
   amber: {
     card: "border-amber-100 dark:border-amber-950/80",
     icon: "border-amber-200 bg-amber-50 text-amber-600 dark:border-amber-900 dark:bg-amber-950/80 dark:text-amber-400",
-    note: "text-amber-600 dark:text-amber-400",
+    note: "text-amber-700 dark:text-amber-400",
   },
   teal: {
     card: "border-teal-100 dark:border-teal-950/80",
     icon: "border-teal-200 bg-teal-50 text-teal-600 dark:border-teal-900 dark:bg-teal-950/80 dark:text-teal-400",
-    note: "text-teal-600 dark:text-teal-400",
+    note: "text-teal-700 dark:text-teal-400",
   },
   rose: {
     card: "border-rose-100 dark:border-rose-950/80",
     icon: "border-rose-200 bg-rose-50 text-rose-600 dark:border-rose-900 dark:bg-rose-950/80 dark:text-rose-400",
-    note: "text-rose-600 dark:text-rose-400",
+    note: "text-rose-700 dark:text-rose-400",
   },
 } as const;
 

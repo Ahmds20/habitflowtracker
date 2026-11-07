@@ -388,11 +388,50 @@ const en = {
   },
   settings: {
     title: "Settings",
-    description:
-      "Theme and language. Profile and password settings are coming soon.",
+    description: "Your profile, password, and how HabitFlow looks.",
     appearance: "Appearance",
+    profile: {
+      title: "Profile",
+      name: "Name",
+      email: "Email",
+      emailHint: "Your email cannot be changed.",
+      timezone: "Timezone",
+      timezoneHint:
+        "Decides when your day starts and ends for check-ins and streaks.",
+      useBrowser: (zone: string) => `Use this device's timezone (${zone})`,
+      saved: "Profile saved",
+    },
+    password: {
+      title: "Password",
+      current: "Current password",
+      next: "New password",
+      hint: "At least 8 characters. Your other devices will be signed out.",
+      submit: "Change password",
+      changed: "Password changed. Other devices were signed out.",
+      demoNote: "Demo accounts have no password.",
+    },
+    danger: {
+      title: "Delete account",
+      body: "Permanently delete your account, applications, interviews, habits, and history.",
+      button: "Delete account",
+      confirmTitle: "Delete your account?",
+      confirmBody:
+        "Everything in this account will be deleted. This cannot be undone.",
+      confirmPassword: "Enter your password to confirm",
+      confirmDemo: "This removes the demo account and its sample data.",
+      deleting: "Deleting…",
+      deleted: "Your account was deleted",
+    },
   },
   more: { title: "More" },
+  errors: {
+    notFoundTitle: "Page not found",
+    notFoundBody: "This page does not exist or was moved.",
+    errorTitle: "Something went wrong",
+    errorBody:
+      "This page could not be loaded. Try again, or go back to your dashboard.",
+    goHome: "Go to dashboard",
+  },
   // Sample data written into demo accounts, in the visitor's language.
   demoData: {
     userName: "Demo User",

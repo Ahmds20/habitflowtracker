@@ -3,7 +3,7 @@ import { SettingsView } from "@/components/settings/settings-view";
 
 export const metadata: Metadata = { title: "Settings · HabitFlow" };
 
-// Theme and language for now. Profile and password forms arrive in M6.
+// Appearance, profile, password, and account deletion.
 export default function Page() {
   return <SettingsView />;
 }

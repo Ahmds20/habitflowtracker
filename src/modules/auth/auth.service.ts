@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { AppError } from "@/lib/errors";
 import type {
   ChangePasswordInput,
+  DeleteAccountInput,
   LoginInput,
   RegisterInput,
   UpdateProfileInput,
@@ -116,4 +117,29 @@ export async function changePassword(
     data: { passwordHash: await hashPassword(input.newPassword) },
   });
   await invalidateOtherSessions(user.id, sessionId);
+}
+
+// Deletes the account and everything in it: sessions, applications, history,
+// interviews, habits, and check-ins (all foreign keys cascade).
+// Real accounts must confirm with their password; demo accounts have none.
+export async function deleteAccount(
+  user: SessionUser,
+  input: DeleteAccountInput,
+) {
+  if (!user.isDemo) {
+    const current = await db.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { passwordHash: true },
+    });
+    const valid =
+      input.password !== undefined &&
+      input.password.length > 0 &&
+      (await verifyPassword(current.passwordHash, input.password));
+    if (!valid) {
+      throw new AppError("VALIDATION_ERROR", "Password is incorrect", {
+        password: ["Password is incorrect"],
+      });
+    }
+  }
+  await db.user.delete({ where: { id: user.id } });
 }
