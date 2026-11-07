@@ -10,7 +10,7 @@ export const categoryBadgeClass: Record<HabitCategory, string> = {
   productivity:
     "border-teal-300 bg-teal-500/15 text-teal-700 dark:border-teal-800 dark:text-teal-400",
   career:
-    "border-amber-300 bg-amber-500/15 text-amber-700 dark:border-amber-800 dark:text-amber-400",
+    "border-amber-300 bg-amber-500/15 text-amber-800 dark:border-amber-800 dark:text-amber-400",
   personal:
     "border-orange-300 bg-orange-500/15 text-orange-700 dark:border-orange-800 dark:text-orange-400",
 };

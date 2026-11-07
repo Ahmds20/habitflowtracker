@@ -187,3 +187,13 @@ A log of product and technical decisions made during planning. Each entry record
 
 - **Decision:** The logo (`design/logo habitflow.jpg`) was traced into a single SVG path. In the app it is a React component (`LogoMark`) that takes the theme's primary colour. Icons follow the Next.js file conventions: `app/icon.svg` (switches colour with the system theme), `app/favicon.ico` (16, 32, 48 px for older browsers), and `app/apple-icon.png` (180 px on a white tile, since iOS fills transparency with black). `public/logo.svg` is the plain black master.
 - **Why:** A vector stays sharp at every size, recolours for light and dark, and weighs 4 KB instead of the 600 KB source JPG.
+
+### D38. Account deletion
+
+- **Decision:** `DELETE /me` removes the account and, through cascading foreign keys, every record it owns. Real accounts confirm with their password; demo accounts have none, so they confirm in the dialog only.
+- **Why:** Users can leave completely. The password check stops someone at an unattended, signed-in browser from erasing an account.
+
+### D39. End-to-end and accessibility tests
+
+- **Decision:** Playwright runs three user flows (demo check-in, new user pipeline, language and theme) and axe-core audits every main page against WCAG 2.1 AA in both themes. They run on a production build against a local database, in CI as their own job.
+- **Why:** Unit and integration tests cannot catch a broken page, a lost click before hydration, or a colour that fails contrast. The audit found four contrast failures in the light theme, fixed by moving the brand colour and small text one shade darker.

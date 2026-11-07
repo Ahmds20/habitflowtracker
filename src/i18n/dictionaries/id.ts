@@ -389,11 +389,49 @@ const id: Dictionary = {
   },
   settings: {
     title: "Pengaturan",
-    description:
-      "Tema dan bahasa. Pengaturan profil dan kata sandi segera hadir.",
+    description: "Profil, kata sandi, dan tampilan HabitFlow.",
     appearance: "Tampilan",
+    profile: {
+      title: "Profil",
+      name: "Nama",
+      email: "Email",
+      emailHint: "Email tidak bisa diubah.",
+      timezone: "Zona waktu",
+      timezoneHint:
+        "Menentukan kapan harimu dimulai dan berakhir untuk check-in dan streak.",
+      useBrowser: (zone) => `Pakai zona waktu perangkat ini (${zone})`,
+      saved: "Profil disimpan",
+    },
+    password: {
+      title: "Kata sandi",
+      current: "Kata sandi saat ini",
+      next: "Kata sandi baru",
+      hint: "Minimal 8 karakter. Perangkat lain akan dikeluarkan.",
+      submit: "Ganti kata sandi",
+      changed: "Kata sandi diganti. Perangkat lain sudah dikeluarkan.",
+      demoNote: "Akun demo tidak memakai kata sandi.",
+    },
+    danger: {
+      title: "Hapus akun",
+      body: "Hapus permanen akun, lamaran, interview, kebiasaan, dan riwayatmu.",
+      button: "Hapus akun",
+      confirmTitle: "Hapus akunmu?",
+      confirmBody:
+        "Semua data di akun ini akan dihapus. Tindakan ini tidak bisa dibatalkan.",
+      confirmPassword: "Masukkan kata sandi untuk konfirmasi",
+      confirmDemo: "Ini menghapus akun demo beserta data contohnya.",
+      deleting: "Menghapus…",
+      deleted: "Akunmu sudah dihapus",
+    },
   },
   more: { title: "Lainnya" },
+  errors: {
+    notFoundTitle: "Halaman tidak ditemukan",
+    notFoundBody: "Halaman ini tidak ada atau sudah dipindahkan.",
+    errorTitle: "Terjadi kesalahan",
+    errorBody: "Halaman ini gagal dimuat. Coba lagi, atau kembali ke dasbor.",
+    goHome: "Buka dasbor",
+  },
   demoData: {
     userName: "Pengguna Demo",
     interviewTitle: "Interview teknis",
@@ -430,6 +468,7 @@ const id: Dictionary = {
     "Nothing to update": "Tidak ada yang diubah",
     "Password is required": "Kata sandi wajib diisi",
     "Password must be at least 8 characters": "Kata sandi minimal 8 karakter",
+    "Password is incorrect": "Kata sandi salah",
     "Password must be at most 128 characters":
       "Kata sandi maksimal 128 karakter",
     "Pick at least one day": "Pilih minimal satu hari",
