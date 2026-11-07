@@ -91,7 +91,9 @@ export function AuthForm({ mode }: { mode: Mode }) {
         <CardTitle className="text-xl">{text.title}</CardTitle>
         <CardDescription>{text.description}</CardDescription>
       </CardHeader>
-      <form onSubmit={onSubmit} noValidate>
+      {/* method="post": if the form is submitted before React loads, the
+          browser must not put the password in the URL (GET is the default). */}
+      <form method="post" onSubmit={onSubmit} noValidate>
         <CardContent className="flex flex-col gap-4">
           {mode === "register" && (
             <Field

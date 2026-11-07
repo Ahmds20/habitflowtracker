@@ -26,6 +26,7 @@ model User {
   updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz
   sessions     Session[]
   applications Application[]
+  habits       Habit[]
 
   @@index([isDemo, createdAt])
   @@map("users")
@@ -141,4 +142,71 @@ model Interview {
 
   @@index([applicationId, scheduledAt])
   @@map("interviews")
+}
+
+// ---------- Habits (M3) ----------
+
+enum HabitCategory {
+  learning
+  health
+  productivity
+  career
+  personal
+
+  @@map("habit_category")
+}
+
+enum HabitScheduleType {
+  // Check in on selected weekdays.
+  days
+  // Reach a number of check-ins per week (Monday start).
+  weekly_target
+
+  @@map("habit_schedule_type")
+}
+
+enum HabitSource {
+  // The user checks in by hand.
+  manual
+  // Progress = applications sent this week. No check-in rows.
+  applications
+
+  @@map("habit_source")
+}
+
+model Habit {
+  id            String            @id @default(uuid(7)) @db.Uuid
+  userId        String            @map("user_id") @db.Uuid
+  name          String
+  description   String?
+  category      HabitCategory
+  scheduleType  HabitScheduleType @map("schedule_type")
+  // ISO weekdays (1 = Monday ... 7 = Sunday). Used only by `days` habits.
+  daysOfWeek    Int[]             @default([]) @map("days_of_week") @db.SmallInt
+  // Used only by `weekly_target` habits.
+  targetPerWeek Int?              @map("target_per_week")
+  source        HabitSource       @default(manual)
+  // Local calendar date in the user's timezone.
+  startDate     DateTime          @map("start_date") @db.Date
+  archivedAt    DateTime?         @map("archived_at") @db.Timestamptz
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkins      HabitCheckin[]
+
+  @@index([userId, archivedAt])
+  @@map("habits")
+}
+
+model HabitCheckin {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  habitId   String   @map("habit_id") @db.Uuid
+  // Local calendar date in the user's timezone.
+  date      DateTime @db.Date
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  // One check-in per habit per day. Also serves as the lookup index.
+  @@unique([habitId, date])
+  @@map("habit_checkins")
 }

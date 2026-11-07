@@ -121,3 +121,18 @@ A log of product and technical decisions made during planning. Each entry record
 
 - **Decision:** The board loads all applications once and filters on the client. Status changes are optimistic, roll back on error, and offer Undo in a toast. Drag-and-drop is desktop-only; every card also has a status dropdown, which is the keyboard and touch alternative.
 - **Why:** Instant feedback without extra endpoints; the dropdown keeps the board accessible.
+
+### D25. Streaks are pure functions, computed on read
+
+- **Decision:** `src/modules/habits/streak.ts` holds every streak rule and has no database code. Rules: only scheduled days count; today never breaks a streak; days before the start date do not exist; weekly-target habits count streaks in weeks, and the running week never breaks one.
+- **Why:** The rules are the riskiest logic in the app. Pure functions let the unit tests cover them exactly, including timezones, week boundaries, and year boundaries.
+
+### D26. "Today" comes from the server
+
+- **Decision:** The habits API returns `today.date` in the user's timezone, and the client checks in with that date. The server still validates the window (today and 7 days back, never the future).
+- **Why:** The browser's clock or timezone may differ from the user's saved timezone.
+
+### D27. The linked habit has no check-in rows
+
+- **Decision:** The weekly applications habit reads applied dates from `applications`. It cannot be checked in by hand, archived, or deleted; only its target can change.
+- **Why:** One source of truth. Adding or backdating an application updates the habit automatically.
